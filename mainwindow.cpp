@@ -14,10 +14,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    // Set up OpenCV window
-    cv::namedWindow("BioMotion [Video]", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
-    cv::setMouseCallback("BioMotion [Video]", mouse_callback, this); // Pass the class instance pointer here
-
     // Set up Qt toolbar window
     ui->setupUi(this);
     show();
@@ -99,13 +95,12 @@ void MainWindow::play()
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     cap.set(CV_CAP_PROP_POS_FRAMES, arg1);
-    //cv::Mat frame;
     cap.read(current_frame);
     cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
 }
 
 void MainWindow::on_action_Open_triggered()
-{
+{       
     // load a video
     QString result;
     result = QFileDialog::getOpenFileName(this, tr("Open Video File 2"), "/home", tr("Video Files (*.avi)"));
@@ -117,9 +112,12 @@ void MainWindow::on_action_Open_triggered()
     ui->frameSlider->setRange(0, frame_count-1);
     ui->frameSpinBox->setRange(0, frame_count-1);
 
+    // Set up OpenCV window
+    cv::namedWindow("BioMotion [Video]", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
+    cv::setMouseCallback("BioMotion [Video]", mouse_callback, this); // Pass the class instance pointer here
+
     // show frame zero
-    cap.set(CV_CAP_PROP_POS_FRAMES, 0);
-    //cv::Mat frame;
+    cap.set(CV_CAP_PROP_POS_FRAMES, 0);    
     cap.read(current_frame);
     cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
     cv::waitKey();
