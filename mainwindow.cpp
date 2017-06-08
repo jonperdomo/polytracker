@@ -40,11 +40,18 @@ void MainWindow::do_mouse(int event, int x, int y)
     {
         qDebug() << "Left button of the mouse is clicked - position (" << x << ", " << y << ")";
         cv::Mat clone = current_frame.clone();
-        int radius = 8;
-        cv::circle(clone, cv::Point(x,y), radius, cv::Scalar(212, 175, 123), 1);
-        cv::line(clone, cv::Point(x-radius, y), cv::Point(x+radius, y), cv::Scalar(212, 175, 123), 1);
-        cv::line(clone, cv::Point(x, y-radius), cv::Point(x, y+radius), cv::Scalar(212, 175, 123), 1);
-        cv::imshow("BioMotion [Video]", clone); //show the frame in "BioMotion [Video]" window
+        if (clone.data == NULL)
+        {
+            qDebug() << "empty frame";
+
+        } else {
+            int radius = 8;
+            cv::circle(clone, cv::Point(x,y), radius, cv::Scalar(212, 175, 123), 1);
+            cv::line(clone, cv::Point(x-radius, y), cv::Point(x+radius, y), cv::Scalar(212, 175, 123), 1);
+            cv::line(clone, cv::Point(x, y-radius), cv::Point(x, y+radius), cv::Scalar(212, 175, 123), 1);
+            cv::imshow("BioMotion [Video]", clone); //show the frame in "BioMotion [Video]" window
+            cv::waitKey();
+        }
 
     }
     else if  ( event == cv::EVENT_RBUTTONDOWN )
@@ -75,12 +82,13 @@ void MainWindow::play()
     int frame_index;
     while(1)
     {
-        //cv::Mat frame;
-        bool bSuccess = cap.read(current_frame);
-        if (!bSuccess) //if not success, break loop
+        cv::Mat frame;
+        cap.read(frame);
+        if (frame.data == NULL) //if empty frame, break loop
         {
         break;
         }
+        current_frame = frame;
         frame_index = cap.get(CV_CAP_PROP_POS_FRAMES);
         ui->frameSlider->setValue(frame_index);
         cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
@@ -114,4 +122,5 @@ void MainWindow::on_action_Open_triggered()
     //cv::Mat frame;
     cap.read(current_frame);
     cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
+    cv::waitKey();
 }
