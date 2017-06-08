@@ -3,11 +3,22 @@
 #include <QHBoxLayout>
 #include <QFileDialog>
 #include <QString>
+#include <QDebug>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    // Set up OpenCV window
+    cv::namedWindow("BioMotion [Video]", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
+    cv::setMouseCallback("BioMotion [Video]", mouse_callback, this); // Pass the class instance pointer here
+
+    // Set up Qt toolbar window
     ui->setupUi(this);
     show();
 }
@@ -15,6 +26,39 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::mouse_callback(int event, int x, int y, int flags, void* userdata)
+{
+    MainWindow* main_window = reinterpret_cast<MainWindow*>(userdata);
+    main_window->do_mouse(event, x, y);
+}
+
+void MainWindow::do_mouse(int event, int x, int y)
+{
+    if  ( event == cv::EVENT_LBUTTONDOWN )
+    {
+        qDebug() << "Left button of the mouse is clicked - position (" << x << ", " << y << ")";
+        cv::Mat clone = current_frame.clone();
+        int radius = 8;
+        cv::circle(clone, cv::Point(x,y), radius, cv::Scalar(212, 175, 123), 1);
+        cv::line(clone, cv::Point(x-radius, y), cv::Point(x+radius, y), cv::Scalar(212, 175, 123), 1);
+        cv::line(clone, cv::Point(x, y-radius), cv::Point(x, y+radius), cv::Scalar(212, 175, 123), 1);
+        cv::imshow("BioMotion [Video]", clone); //show the frame in "BioMotion [Video]" window
+
+    }
+    else if  ( event == cv::EVENT_RBUTTONDOWN )
+    {
+        qDebug() << "Right button of the mouse is clicked - position (" << x << ", " << y << ")";
+    }
+    else if  ( event == cv::EVENT_MBUTTONDOWN )
+    {
+        qDebug() << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")";
+    }
+    else if ( event == cv::EVENT_MOUSEMOVE )
+    {
+        qDebug() << "Mouse move over the window - position (" << x << ", " << y << ")";
+    }
 }
 
 void MainWindow::on_playButton_clicked()
@@ -31,15 +75,15 @@ void MainWindow::play()
     int frame_index;
     while(1)
     {
-        cv::Mat frame;
-        bool bSuccess = cap.read(frame);
+        //cv::Mat frame;
+        bool bSuccess = cap.read(current_frame);
         if (!bSuccess) //if not success, break loop
         {
         break;
         }
         frame_index = cap.get(CV_CAP_PROP_POS_FRAMES);
         ui->frameSlider->setValue(frame_index);
-        cv::imshow("BioMotion [Video]", frame); //show the frame in "BioMotion [Video]" window
+        cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
     cv::waitKey(30);
     }
 }
@@ -47,9 +91,9 @@ void MainWindow::play()
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     cap.set(CV_CAP_PROP_POS_FRAMES, arg1);
-    cv::Mat frame;
-    cap.read(frame);
-    cv::imshow("BioMotion [Video]", frame); //show the frame in "BioMotion [Video]" window
+    //cv::Mat frame;
+    cap.read(current_frame);
+    cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
 }
 
 void MainWindow::on_action_Open_triggered()
@@ -59,7 +103,6 @@ void MainWindow::on_action_Open_triggered()
     result = QFileDialog::getOpenFileName(this, tr("Open Video File 2"), "/home", tr("Video Files (*.avi)"));
     video_filepath = result.toUtf8().constData();
     cap = cv::VideoCapture(video_filepath);
-    cv::namedWindow("BioMotion [Video]", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
     frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
 
     // update ui elements
@@ -68,7 +111,7 @@ void MainWindow::on_action_Open_triggered()
 
     // show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
-    cv::Mat frame;
-    cap.read(frame);
-    cv::imshow("BioMotion [Video]", frame); //show the frame in "BioMotion [Video]" window
+    //cv::Mat frame;
+    cap.read(current_frame);
+    cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
 }
