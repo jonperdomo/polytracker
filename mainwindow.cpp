@@ -103,6 +103,18 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
 }
 
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    if (!current_frame.empty())
+    {
+        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+        pixel = QPixmap::fromImage(img);
+        int w = ui->frameLabel->width();
+        int h = ui->frameLabel->height();
+        ui->frameLabel->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
+    }
+}
+
 void MainWindow::on_action_Open_triggered()
 {       
     // load a video
@@ -121,11 +133,13 @@ void MainWindow::on_action_Open_triggered()
     cv::setMouseCallback("BioMotion [Video]", mouse_callback, this); // Pass the class instance pointer here
 
     // show frame zero
-    cap.set(CV_CAP_PROP_POS_FRAMES, 0);    
+    cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
-    ui->frameLabel->setPixmap(pixel);
+    int w = ui->frameLabel->width();
+    int h = ui->frameLabel->height();
+    ui->frameLabel->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
     //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
     //cv::waitKey();
 }

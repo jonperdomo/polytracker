@@ -21,6 +21,12 @@
        <layout class="QVBoxLayout" name="frameLayout">
         <item>
          <widget class="QLabel" name="frameLabel">
+          <property name="minimumSize">
+           <size>
+            <width>1</width>
+            <height>1</height>
+           </size>
+          </property>
           <property name="palette">
            <palette>
             <active>

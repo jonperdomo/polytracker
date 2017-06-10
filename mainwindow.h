@@ -31,6 +31,7 @@ public slots:
     static void mouse_callback(int event, int x, int y, int flags, void* userdata);
 
 private slots:
+    void resizeEvent(QResizeEvent *event);
     void on_playButton_clicked();
     void on_frameSpinBox_valueChanged(int arg1);
     void on_action_Open_triggered();
