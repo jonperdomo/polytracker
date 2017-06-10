@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QString>
 #include <QDebug>
+#include <QImage>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -96,7 +97,10 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     cap.set(CV_CAP_PROP_POS_FRAMES, arg1);
     cap.read(current_frame);
-    cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
+    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+    pixel = QPixmap::fromImage(img);
+    ui->frameLabel->setPixmap(pixel);
+    //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
 }
 
 void MainWindow::on_action_Open_triggered()
@@ -119,6 +123,9 @@ void MainWindow::on_action_Open_triggered()
     // show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);    
     cap.read(current_frame);
-    cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
-    cv::waitKey();
+    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+    pixel = QPixmap::fromImage(img);
+    ui->frameLabel->setPixmap(pixel);
+    //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
+    //cv::waitKey();
 }

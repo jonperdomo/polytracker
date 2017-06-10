@@ -9,6 +9,8 @@
 #include <QWidget>
 #include <QLabel>
 #include <string>
+#include <QImage>
+#include <QPixmap>
 
 namespace Ui {
 class MainWindow;
@@ -39,6 +41,8 @@ private:
     std::string video_filepath;
     cv::VideoCapture cap;
     int frame_count;
+    QImage img;
+    QPixmap pixel;
 };
 
 #endif // MAINWINDOW_H
