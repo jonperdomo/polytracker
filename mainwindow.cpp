@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Set up Qt toolbar window
     ui->setupUi(this);
+    connect(ui->frameDisplay, SIGNAL(sendMousePosition(QPoint&)), this, SLOT(showMousePosition(QPoint&)));
     show();
 }
 
@@ -63,6 +64,11 @@ void MainWindow::do_mouse(int event, int x, int y)
     {
         qDebug() << "Mouse move over the window - position (" << x << ", " << y << ")";
     }
+}
+
+void MainWindow::showMousePosition(QPoint &pos)
+{
+    ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()));
 }
 
 void MainWindow::on_playButton_clicked()

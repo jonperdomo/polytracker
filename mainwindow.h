@@ -28,6 +28,7 @@ public:
 public slots:
     void play();
     void do_mouse(int event, int x, int y);
+    void showMousePosition(QPoint& pos);
     static void mouse_callback(int event, int x, int y, int flags, void* userdata);
 
 private slots:

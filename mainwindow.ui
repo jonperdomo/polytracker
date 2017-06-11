@@ -464,6 +464,26 @@
        </layout>
       </item>
       <item>
+       <widget class="FrameDisplay" name="frameDisplay">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(255, 134, 255);</string>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="mousePositionLabel">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(117, 195, 255);</string>
+        </property>
+        <property name="text">
+         <string>TextLabel</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="controlLayout">
         <item>
          <widget class="QComboBox" name="videoComboBox"/>
@@ -517,6 +537,13 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>FrameDisplay</class>
+   <extends>QLabel</extends>
+   <header location="global">framedisplay.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>
