@@ -14,11 +14,18 @@ FrameDisplay::~FrameDisplay()
 
 void FrameDisplay::mouseMoveEvent(QMouseEvent *mouse_event)
 {
-    QPoint mouse_pos = mouse_event->pos();
-
-    if(mouse_pos.x() <= this->size().width() && mouse_pos.y() <= this->size().height())
+    if (this->pixmap() > 0)
     {
-        if(mouse_pos.x() >= 0 && mouse_pos.y() >= 0)
+        QPoint mouse_pos = mouse_event->pos();
+
+        // Convert to Pixmap coordinates
+        int width_spacer = this->size().width() - this->pixmap()->width();
+        int height_spacer = this->size().height() - this->pixmap()->height();
+        int x = mouse_pos.x() - (this->size().width() - this->pixmap()->width()) / 2;
+        int y = mouse_pos.y() - (this->size().height() - this->pixmap()->height()) / 2;
+        mouse_pos.setX(x);
+        mouse_pos.setY(y);
+        if (x >= 0 && x <= this->pixmap()->width() && y >= 0 &&  y <= this->pixmap()->height())
         {
             emit sendMousePosition(mouse_pos);
         }

@@ -37,20 +37,6 @@ void MainWindow::do_mouse(int event, int x, int y)
     if  ( event == cv::EVENT_LBUTTONDOWN )
     {
         qDebug() << "Left button of the mouse is clicked - position (" << x << ", " << y << ")";
-        cv::Mat clone = current_frame.clone();
-        if (clone.data == NULL)
-        {
-            qDebug() << "empty frame";
-
-        } else {
-            int radius = 8;
-            cv::circle(clone, cv::Point(x,y), radius, cv::Scalar(212, 175, 123), 1);
-            cv::line(clone, cv::Point(x-radius, y), cv::Point(x+radius, y), cv::Scalar(212, 175, 123), 1);
-            cv::line(clone, cv::Point(x, y-radius), cv::Point(x, y+radius), cv::Scalar(212, 175, 123), 1);
-            cv::imshow("BioMotion [Video]", clone); //show the frame in "BioMotion [Video]" window
-            cv::waitKey();
-        }
-
     }
     else if  ( event == cv::EVENT_RBUTTONDOWN )
     {
@@ -68,7 +54,13 @@ void MainWindow::do_mouse(int event, int x, int y)
 
 void MainWindow::showMousePosition(QPoint &pos)
 {
-    ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()));
+    if (!current_frame.empty())
+    {
+        cv::Size mat_size = current_frame.size();
+        int scaled_x = (float)pos.x() * ((float)mat_size.width / (float)(ui->frameDisplay->pixmap()->width()));
+        int scaled_y = (float)pos.y() * ((float)mat_size.height / ((float)ui->frameDisplay->pixmap()->height()));
+        ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()) + ", scaled-> " +  QString::number(scaled_x) + ", y: " + QString::number(scaled_y));
+    }
 }
 
 void MainWindow::on_playButton_clicked()
@@ -105,8 +97,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
-    ui->frameLabel->setPixmap(pixel);
-    //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
+    ui->frameDisplay->setPixmap(pixel);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -115,9 +106,9 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     {
         img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
         pixel = QPixmap::fromImage(img);
-        int w = ui->frameLabel->width();
-        int h = ui->frameLabel->height();
-        ui->frameLabel->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
+        int w = ui->frameDisplay->width();
+        int h = ui->frameDisplay->height();
+        ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
     }
 }
 
@@ -143,9 +134,7 @@ void MainWindow::on_action_Open_triggered()
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
-    int w = ui->frameLabel->width();
-    int h = ui->frameLabel->height();
-    ui->frameLabel->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
-    //cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
-    //cv::waitKey();
+    int w = ui->frameDisplay->width();
+    int h = ui->frameDisplay->height();
+    ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
 }

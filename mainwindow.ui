@@ -16,11 +16,11 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
     <item>
-     <layout class="QVBoxLayout" name="mainLayout">
+     <layout class="QVBoxLayout" name="mainLayout" stretch="8,1">
       <item>
        <layout class="QVBoxLayout" name="frameLayout">
         <item>
-         <widget class="QLabel" name="frameLabel">
+         <widget class="FrameDisplay" name="frameDisplay">
           <property name="minimumSize">
            <size>
             <width>1</width>
@@ -464,26 +464,6 @@
        </layout>
       </item>
       <item>
-       <widget class="FrameDisplay" name="frameDisplay">
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(255, 134, 255);</string>
-        </property>
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="mousePositionLabel">
-        <property name="styleSheet">
-         <string notr="true">background-color: rgb(117, 195, 255);</string>
-        </property>
-        <property name="text">
-         <string>TextLabel</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <layout class="QHBoxLayout" name="controlLayout">
         <item>
          <widget class="QComboBox" name="videoComboBox"/>
@@ -497,6 +477,16 @@
         </item>
         <item>
          <widget class="QSpinBox" name="frameSpinBox"/>
+        </item>
+        <item>
+         <widget class="QLabel" name="mousePositionLabel">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="text">
+           <string>x: 0, y: 0</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
