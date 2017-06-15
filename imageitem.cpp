@@ -1,10 +1,11 @@
 #include "imageitem.h"
 
-
+#include <QDebug>
 
 ImageItem::ImageItem(QObject *parent)
 {
-
+    // NOTE: May not need to track mouse movement at all times.
+    this->setAcceptHoverEvents(true);
 }
 
 ImageItem::~ImageItem()
@@ -12,8 +13,10 @@ ImageItem::~ImageItem()
 
 }
 
-void ImageItem::mouseMoveEvent(QMouseEvent *mouse_event)
+void ImageItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
-    QPoint mouse_pos = mouse_event->pos();
-    emit currentPositionRgbChanged(mouse_pos, mouse_pos);
+    QPointF mouse_pos = event->pos();
+    QRgb rgbValue = pixmap().toImage().pixel(mouse_pos.x(), mouse_pos.y());
+    qDebug() << "x: " << mouse_pos.x() << ", y: " << mouse_pos.y();
+    emit currentPositionRgbChanged(mouse_pos);
 }

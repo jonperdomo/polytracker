@@ -4,9 +4,9 @@
 #include <QObject>
 #include <QWidget>
 #include <QGraphicsPixmapItem>
-#include <QPoint>
+#include <QPointF>
 
-#include <QMouseEvent>
+#include <QGraphicsSceneMouseEvent>
 
 class ImageItem : public QObject, public QGraphicsPixmapItem
 {
@@ -16,10 +16,10 @@ public:
     ~ImageItem();
 
 protected:
-    void mouseMoveEvent(QMouseEvent *mouse_event);
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event);
 
 signals:
-    void currentPositionRgbChanged(QPoint pos, QPoint rgb);
+    void currentPositionRgbChanged(QPointF&);
 
 public slots:
 };

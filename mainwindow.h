@@ -16,6 +16,9 @@
 #include <QGraphicsItem>
 #include <QGraphicsView>
 
+#include "imageitem.h"
+
+
 namespace Ui {
 class MainWindow;
 }
@@ -32,7 +35,7 @@ public:
 public slots:
     void play();
     void do_mouse(int event, int x, int y);
-    void showMousePosition(QPoint& pos);
+    void showMousePosition(QPointF& pos);
     static void mouse_callback(int event, int x, int y, int flags, void* userdata);
 
 private slots:
@@ -55,6 +58,7 @@ private:
     QGraphicsRectItem *rectangle;
     QGraphicsTextItem *text;
     QPixmap pix;
+    ImageItem *image_item;
 };
 
 #endif // MAINWINDOW_H

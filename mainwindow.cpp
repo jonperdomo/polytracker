@@ -10,15 +10,13 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "imageitem.h"
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     // Set up Qt toolbar window
     ui->setupUi(this);
-    connect(ui->frameDisplay, SIGNAL(sendMousePosition(QPoint&)), this, SLOT(showMousePosition(QPoint&)));
+    //connect(ui->frameDisplay, SIGNAL(sendMousePosition(QPoint&)), this, SLOT(showMousePosition(QPoint&)));
 
     // Set up scene
     scene = new QGraphicsScene(this);
@@ -36,6 +34,9 @@ MainWindow::MainWindow(QWidget *parent) :
     text = scene->addText("bogotobogo.com", QFont("Arial", 20) );
     // movable text
     text->setFlag(QGraphicsItem::ItemIsMovable);
+    image_item = new ImageItem();
+    scene->addItem(image_item);
+    connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
 
     show();
 }
@@ -71,8 +72,9 @@ void MainWindow::do_mouse(int event, int x, int y)
     }
 }
 
-void MainWindow::showMousePosition(QPoint &pos)
+void MainWindow::showMousePosition(QPointF &pos)
 {
+    qDebug() << "PIX move over the window - position (" << QString::number(pos.x()) << ", " << QString::number(pos.y()) << ")";
     if (!current_frame.empty())
     {
         cv::Size mat_size = current_frame.size();
@@ -156,4 +158,9 @@ void MainWindow::on_action_Open_triggered()
     int w = ui->frameDisplay->width();
     int h = ui->frameDisplay->height();
     ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
+
+    //
+    image_item->setPixmap(pixel);
+    //scene->clear();
+    //scene->setFocusItem(image_item);
 }
