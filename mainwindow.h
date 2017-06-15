@@ -33,9 +33,7 @@ public:
     ~MainWindow();
 
 public slots:
-    void do_mouse(int event, int x, int y);
     void showMousePosition(QPointF& pos);
-    static void mouse_callback(int event, int x, int y, int flags, void* userdata);
 
 private slots:
     void resizeEvent(QResizeEvent *event);

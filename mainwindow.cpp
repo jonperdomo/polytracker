@@ -16,11 +16,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Set up Qt toolbar window
     ui->setupUi(this);
-    //connect(ui->frameDisplay, SIGNAL(sendMousePosition(QPoint&)), this, SLOT(showMousePosition(QPoint&)));
 
     // Set up scene
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
+    ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
     image_item = new ImageItem();
     scene->addItem(image_item);
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
@@ -33,41 +33,13 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::mouse_callback(int event, int x, int y, int flags, void* userdata)
-{
-    MainWindow* main_window = reinterpret_cast<MainWindow*>(userdata);
-    main_window->do_mouse(event, x, y);
-}
-
-void MainWindow::do_mouse(int event, int x, int y)
-{
-    if  ( event == cv::EVENT_LBUTTONDOWN )
-    {
-        qDebug() << "Left button of the mouse is clicked - position (" << x << ", " << y << ")";
-    }
-    else if  ( event == cv::EVENT_RBUTTONDOWN )
-    {
-        qDebug() << "Right button of the mouse is clicked - position (" << x << ", " << y << ")";
-    }
-    else if  ( event == cv::EVENT_MBUTTONDOWN )
-    {
-        qDebug() << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")";
-    }
-    else if ( event == cv::EVENT_MOUSEMOVE )
-    {
-        qDebug() << "Mouse move over the window - position (" << x << ", " << y << ")";
-    }
-}
-
 void MainWindow::showMousePosition(QPointF &pos)
 {
-    qDebug() << "PIX move over the window - position (" << QString::number(pos.x()) << ", " << QString::number(pos.y()) << ")";
+    qDebug() << "pixel coordinate: (" << QString::number(pos.x()) << ", " << QString::number(pos.y()) << ")";
     if (!current_frame.empty())
     {
         cv::Size mat_size = current_frame.size();
-        int scaled_x = (float)pos.x() * ((float)mat_size.width / (float)(ui->frameDisplay->pixmap()->width()));
-        int scaled_y = (float)pos.y() * ((float)mat_size.height / ((float)ui->frameDisplay->pixmap()->height()));
-        ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()) + ", scaled-> " +  QString::number(scaled_x) + ", y: " + QString::number(scaled_y));
+        ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()));
     }
 }
 
@@ -77,7 +49,6 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
-    ui->frameDisplay->setPixmap(pixel);
 
     // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixel);
@@ -92,9 +63,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     {
         img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
         pixel = QPixmap::fromImage(img);
-        int w = ui->frameDisplay->width();
-        int h = ui->frameDisplay->height();
-        ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
 
         // Show in view, scaled to view bounds & keeping aspect ratio
         image_item->setPixmap(pixel);
@@ -122,9 +90,6 @@ void MainWindow::on_action_Open_triggered()
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
-    int w = ui->frameDisplay->width();
-    int h = ui->frameDisplay->height();
-    ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
 
     // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixel);
