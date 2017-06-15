@@ -21,19 +21,6 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set up scene
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
-    QBrush greenBrush(Qt::green);
-    QBrush blueBrush(Qt::blue);
-    QPen outlinePen(Qt::black);
-    outlinePen.setWidth(2);
-
-    rectangle = scene->addRect(100, 0, 80, 100, outlinePen, blueBrush);
-
-    // addEllipse(x,y,w,h,pen,brush)
-    ellipse = scene->addEllipse(0, -100, 300, 60, outlinePen, greenBrush);
-
-    text = scene->addText("bogotobogo.com", QFont("Arial", 20) );
-    // movable text
-    text->setFlag(QGraphicsItem::ItemIsMovable);
     image_item = new ImageItem();
     scene->addItem(image_item);
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
@@ -84,34 +71,6 @@ void MainWindow::showMousePosition(QPointF &pos)
     }
 }
 
-void MainWindow::on_playButton_clicked()
-{
-    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES);
-    if (frame_index == frame_count) {
-        cap.set(CV_CAP_PROP_POS_FRAMES, 0);
-    }
-    play();
-}
-
-void MainWindow::play()
-{
-    int frame_index;
-    while(1)
-    {
-        cv::Mat frame;
-        cap.read(frame);
-        if (frame.data == NULL) //if empty frame, break loop
-        {
-        break;
-        }
-        current_frame = frame;
-        frame_index = cap.get(CV_CAP_PROP_POS_FRAMES);
-        ui->frameSlider->setValue(frame_index);
-        cv::imshow("BioMotion [Video]", current_frame); //show the frame in "BioMotion [Video]" window
-    cv::waitKey(30);
-    }
-}
-
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     cap.set(CV_CAP_PROP_POS_FRAMES, arg1);
@@ -119,6 +78,12 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
     ui->frameDisplay->setPixmap(pixel);
+
+    // Show in view, scaled to view bounds & keeping aspect ratio
+    image_item->setPixmap(pixel);
+    QRectF bounds = scene->itemsBoundingRect();
+    ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
+    ui->graphicsView->centerOn(0,0);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -130,6 +95,12 @@ void MainWindow::resizeEvent(QResizeEvent *event)
         int w = ui->frameDisplay->width();
         int h = ui->frameDisplay->height();
         ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
+
+        // Show in view, scaled to view bounds & keeping aspect ratio
+        image_item->setPixmap(pixel);
+        QRectF bounds = scene->itemsBoundingRect();
+        ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
+        ui->graphicsView->centerOn(0,0);
     }
 }
 
@@ -146,10 +117,6 @@ void MainWindow::on_action_Open_triggered()
     ui->frameSlider->setRange(0, frame_count-1);
     ui->frameSpinBox->setRange(0, frame_count-1);
 
-    // Set up OpenCV window
-    cv::namedWindow("BioMotion [Video]", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_NORMAL);
-    cv::setMouseCallback("BioMotion [Video]", mouse_callback, this); // Pass the class instance pointer here
-
     // show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     cap.read(current_frame);
@@ -159,8 +126,9 @@ void MainWindow::on_action_Open_triggered()
     int h = ui->frameDisplay->height();
     ui->frameDisplay->setPixmap(pixel.scaled(w, h, Qt::KeepAspectRatio));
 
-    //
+    // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixel);
-    //scene->clear();
-    //scene->setFocusItem(image_item);
+    QRectF bounds = scene->itemsBoundingRect();
+    ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
+    ui->graphicsView->centerOn(0,0);
 }
