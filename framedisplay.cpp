@@ -1,5 +1,6 @@
 #include "framedisplay.h"
 #include <QMessageBox>
+#include <QPainter>
 
 FrameDisplay::FrameDisplay(QWidget *parent) : QLabel(parent)
 {
@@ -45,4 +46,12 @@ void FrameDisplay::mousePressEvent(QMouseEvent *mouse_event)
         msg.setText("Right Mouse Button pressed!");
         msg.exec();
     }
+}
+
+void FrameDisplay::paintEvent(QPaintEvent *paint_event)
+{
+    QPainter p(this);
+    p.drawEllipse(this->x(), this->y(), width() /10, height() /10);
+    p.end();
+    QLabel::paintEvent(paint_event);
 }

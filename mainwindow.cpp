@@ -10,6 +10,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include "imageitem.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -18,6 +19,24 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set up Qt toolbar window
     ui->setupUi(this);
     connect(ui->frameDisplay, SIGNAL(sendMousePosition(QPoint&)), this, SLOT(showMousePosition(QPoint&)));
+
+    // Set up scene
+    scene = new QGraphicsScene(this);
+    ui->graphicsView->setScene(scene);
+    QBrush greenBrush(Qt::green);
+    QBrush blueBrush(Qt::blue);
+    QPen outlinePen(Qt::black);
+    outlinePen.setWidth(2);
+
+    rectangle = scene->addRect(100, 0, 80, 100, outlinePen, blueBrush);
+
+    // addEllipse(x,y,w,h,pen,brush)
+    ellipse = scene->addEllipse(0, -100, 300, 60, outlinePen, greenBrush);
+
+    text = scene->addText("bogotobogo.com", QFont("Arial", 20) );
+    // movable text
+    text->setFlag(QGraphicsItem::ItemIsMovable);
+
     show();
 }
 

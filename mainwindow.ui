@@ -16,7 +16,10 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
     <item>
-     <layout class="QVBoxLayout" name="mainLayout" stretch="8,1">
+     <layout class="QVBoxLayout" name="mainLayout" stretch="0,8,1">
+      <item>
+       <widget class="QGraphicsView" name="graphicsView"/>
+      </item>
       <item>
        <layout class="QVBoxLayout" name="frameLayout">
         <item>

@@ -12,6 +12,10 @@
 #include <QImage>
 #include <QPixmap>
 
+#include <QGraphicsScene>
+#include <QGraphicsItem>
+#include <QGraphicsView>
+
 namespace Ui {
 class MainWindow;
 }
@@ -45,6 +49,12 @@ private:
     int frame_count;
     QImage img;
     QPixmap pixel;
+
+    QGraphicsScene *scene;
+    QGraphicsEllipseItem *ellipse;
+    QGraphicsRectItem *rectangle;
+    QGraphicsTextItem *text;
+    QPixmap pix;
 };
 
 #endif // MAINWINDOW_H

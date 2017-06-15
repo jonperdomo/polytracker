@@ -26,11 +26,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    framedisplay.cpp
+    framedisplay.cpp \
+    imageitem.cpp
 
 HEADERS += \
         mainwindow.h \
-    framedisplay.h
+    framedisplay.h \
+    imageitem.h
 
 FORMS += \
         mainwindow.ui
