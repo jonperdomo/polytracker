@@ -21,7 +21,14 @@ MainWindow::MainWindow(QWidget *parent) :
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
+
+    QPixmap logo = QPixmap(":/Logo/northern-red.png");
+
+    // Show in view, scaled to view bounds & keeping aspect ratio
+
+
     image_item = new ImageItem();
+    image_item->setPixmap(logo);
     scene->addItem(image_item);
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
 

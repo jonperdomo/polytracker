@@ -16,14 +16,24 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
     <item>
-     <layout class="QVBoxLayout" name="mainLayout" stretch="1,0">
+     <layout class="QVBoxLayout" name="mainLayout" stretch="1,0,0">
       <item>
        <widget class="ImageView" name="graphicsView"/>
       </item>
       <item>
+       <widget class="QLabel" name="mousePositionLabel">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="text">
+         <string>x: 0, y: 0</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <layout class="QHBoxLayout" name="controlLayout">
         <item>
-         <widget class="QComboBox" name="videoComboBox"/>
+         <widget class="QSpinBox" name="frameSpinBox"/>
         </item>
         <item>
          <widget class="QSlider" name="frameSlider">
@@ -33,17 +43,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QSpinBox" name="frameSpinBox"/>
-        </item>
-        <item>
-         <widget class="QLabel" name="mousePositionLabel">
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="text">
-           <string>x: 0, y: 0</string>
-          </property>
-         </widget>
+         <widget class="QComboBox" name="videoComboBox"/>
         </item>
        </layout>
       </item>
