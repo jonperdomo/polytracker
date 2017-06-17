@@ -39,6 +39,7 @@ private slots:
     void resizeEvent(QResizeEvent *event);
     void on_frameSpinBox_valueChanged(int arg1);
     void on_action_Open_triggered();
+    void on_pointTable_cellClicked(int row, int column);
 
 private:
     Ui::MainWindow *ui;
