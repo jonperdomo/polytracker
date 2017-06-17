@@ -17,9 +17,11 @@ public:
 
 protected:
     void hoverMoveEvent(QGraphicsSceneHoverEvent *event);
+    void mousePressEvent(QGraphicsSceneMouseEvent *event);
 
 signals:
     void currentPositionRgbChanged(QPointF&);
+    void pixelClicked(QPointF&);
 
 public slots:
 };

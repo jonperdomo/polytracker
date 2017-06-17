@@ -37,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
+    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
     connect(ui->pointTable, SIGNAL(cellClicked(int,int)), this, SLOT(on_pointTable_cellClicked(int,int)));
     show();
 }
@@ -51,9 +52,37 @@ void MainWindow::showMousePosition(QPointF &pos)
     if (!current_frame.empty())
     {
         cv::Size mat_size = current_frame.size();
-        if (pos.x() >= 0 && pos.y() >= 0 && pos.x() <= mat_size.width && pos.y() <= mat_size.height)
+        int x = static_cast<int>(pos.x());
+        int y = static_cast<int>(pos.y());
+        if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
-            ui->mousePositionLabel->setText("x: " + QString::number(pos.x()) + ", y: " + QString::number(pos.y()));
+            ui->mousePositionLabel->setText("x: " + QString::number(x) + ", y: " + QString::number(y));
+        }
+    }
+}
+
+void MainWindow::onPixelClicked(QPointF &pos)
+{
+    qDebug() << "entered here: " << pos.x() << ", "<< pos.y();
+    if (!current_frame.empty())
+    {
+        cv::Size mat_size = current_frame.size();
+        int x = static_cast<int>(pos.x());
+        int y = static_cast<int>(pos.y());
+        if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
+        {
+            int row = ui->frameSlider->value()-1;
+            QString text = QString("%1, %2").arg(x).arg(y);
+            ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
+            //for (int row = 0; row < ui->pointTable->rowCount(); ++row)
+            //{
+            //    if (!ui->pointTable->item(row, 0))
+            //    {
+            //        QString text = QString("%1, %2").arg(x).arg(y);
+            //        ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
+            //        break;
+            //    }
+            //}
         }
     }
 }

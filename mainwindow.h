@@ -34,6 +34,7 @@ public:
 
 public slots:
     void showMousePosition(QPointF& pos);
+    void onPixelClicked(QPointF& pos);
 
 private slots:
     void resizeEvent(QResizeEvent *event);
