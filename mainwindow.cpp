@@ -152,6 +152,11 @@ void MainWindow::on_pointTable_cellClicked(int row, int column)
 {
     qDebug() << "row: " << row << " column: " << column;
     QTableWidgetItem* item = ui->pointTable->item(row, column);
+
+    // Update the frame based on the row selected
+    ui->frameSpinBox->setValue(row+1);
+
+    // Enable/disable the button for deleting points
     if (item && !item->text().trimmed().isEmpty())
     {
         ui->deletePointButton->setEnabled(true);
