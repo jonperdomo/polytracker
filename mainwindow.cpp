@@ -74,15 +74,16 @@ void MainWindow::onPixelClicked(QPointF &pos)
             int row = ui->frameSlider->value()-1;
             QString text = QString("%1, %2").arg(x).arg(y);
             ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
-            //for (int row = 0; row < ui->pointTable->rowCount(); ++row)
-            //{
-            //    if (!ui->pointTable->item(row, 0))
-            //    {
-            //        QString text = QString("%1, %2").arg(x).arg(y);
-            //        ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
-            //        break;
-            //    }
-            //}
+            QPen pen = QPen(QColor(255, 255, 0), 3, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
+            foreach (QGraphicsItem *item, scene->items())
+            {
+                QGraphicsEllipseItem *ellipse = qgraphicsitem_cast<QGraphicsEllipseItem *>(item);
+                if (ellipse)
+                {
+                    scene->removeItem(ellipse);
+                }
+            }
+            ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
         }
     }
 }
@@ -99,6 +100,9 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     QRectF bounds = scene->itemsBoundingRect();
     ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
     ui->graphicsView->centerOn(0,0);
+
+    //TODO: Determine where to place the ellipse (scene->addEllipse) based on the frame value and the pos() in the UI table.
+
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -160,11 +164,9 @@ void MainWindow::on_pointTable_cellClicked(int row, int column)
     if (item && !item->text().trimmed().isEmpty())
     {
         ui->deletePointButton->setEnabled(true);
-        qDebug() << "not empty: " << item->text();
     }
     else
     {
         ui->deletePointButton->setEnabled(false);
-        qDebug() << "empty";
     }
 }

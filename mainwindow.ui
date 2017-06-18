@@ -36,7 +36,11 @@
       <item>
        <layout class="QHBoxLayout" name="controlLayout">
         <item>
-         <widget class="QSpinBox" name="frameSpinBox"/>
+         <widget class="QSpinBox" name="frameSpinBox">
+          <property name="prefix">
+           <string/>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QSlider" name="frameSlider">
@@ -88,6 +92,16 @@
            </property>
            <property name="text">
             <string>Delete point (s)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="saveButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Save to CSV</string>
            </property>
           </widget>
          </item>

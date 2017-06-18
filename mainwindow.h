@@ -57,6 +57,7 @@ private:
     QGraphicsTextItem *text;
     QPixmap pix;
     ImageItem *image_item;
+    QGraphicsEllipseItem *ellipse_item;
 };
 
 #endif // MAINWINDOW_H
