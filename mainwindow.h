@@ -40,7 +40,7 @@ private slots:
     void resizeEvent(QResizeEvent *event);
     void on_frameSpinBox_valueChanged(int arg1);
     void on_action_Open_triggered();
-    void on_pointTable_cellClicked(int row, int column);
+    void on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column);
 
 private:
     Ui::MainWindow *ui;
@@ -50,7 +50,7 @@ private:
     int frame_count;
     QImage img;
     QPixmap pixel;
-
+    QPen pen;
     QGraphicsScene *scene;
     QGraphicsEllipseItem *ellipse;
     QGraphicsRectItem *rectangle;
@@ -58,6 +58,7 @@ private:
     QPixmap pix;
     ImageItem *image_item;
     QGraphicsEllipseItem *ellipse_item;
+    void removeAllSceneEllipses();
 };
 
 #endif // MAINWINDOW_H

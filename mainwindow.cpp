@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QImage>
 #include <QTableWidgetItem>
+#include <QPen>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -26,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //setWindowIcon(QIcon(logo));
 
     // Set up scene
+    pen = QPen(QColor(50,205,50), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
@@ -38,7 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
-    connect(ui->pointTable, SIGNAL(cellClicked(int,int)), this, SLOT(on_pointTable_cellClicked(int,int)));
+    connect(ui->pointTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_pointTable_currentCellChanged(int,int,int,int)));
     show();
 }
 
@@ -74,16 +76,20 @@ void MainWindow::onPixelClicked(QPointF &pos)
             int row = ui->frameSlider->value()-1;
             QString text = QString("%1, %2").arg(x).arg(y);
             ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
-            QPen pen = QPen(QColor(255, 255, 0), 3, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
-            foreach (QGraphicsItem *item, scene->items())
-            {
-                QGraphicsEllipseItem *ellipse = qgraphicsitem_cast<QGraphicsEllipseItem *>(item);
-                if (ellipse)
-                {
-                    scene->removeItem(ellipse);
-                }
-            }
+            removeAllSceneEllipses();
             ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+        }
+    }
+}
+
+void MainWindow::removeAllSceneEllipses()
+{
+    foreach (QGraphicsItem *item, scene->items())
+    {
+        QGraphicsEllipseItem *ellipse = qgraphicsitem_cast<QGraphicsEllipseItem *>(item);
+        if (ellipse)
+        {
+            scene->removeItem(ellipse);
         }
     }
 }
@@ -101,8 +107,16 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
     ui->graphicsView->centerOn(0,0);
 
-    //TODO: Determine where to place the ellipse (scene->addEllipse) based on the frame value and the pos() in the UI table.
-
+    // Determine where to place the ellipse based on the frame value and its associated (x,y) position
+    removeAllSceneEllipses();
+    QTableWidgetItem* item = ui->pointTable->item(ui->pointTable->currentRow(), 0);
+    if (item)
+    {
+        QStringList coordinate = item->text().split(",");
+        int x = (coordinate[0]).toInt();
+        int y = (coordinate[1]).toInt();
+        ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+    }
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -152,12 +166,10 @@ void MainWindow::on_action_Open_triggered()
     ui->graphicsView->centerOn(0,0);
 }
 
-void MainWindow::on_pointTable_cellClicked(int row, int column)
+void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
 {
-    qDebug() << "row: " << row << " column: " << column;
-    QTableWidgetItem* item = ui->pointTable->item(row, column);
-
     // Update the frame based on the row selected
+    QTableWidgetItem* item = ui->pointTable->item(row, column);
     ui->frameSpinBox->setValue(row+1);
 
     // Enable/disable the button for deleting points
