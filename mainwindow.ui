@@ -107,6 +107,9 @@
          </item>
         </layout>
        </item>
+       <item>
+        <widget class="QGraphicsView" name="insetView"/>
+       </item>
       </layout>
      </widget>
     </item>

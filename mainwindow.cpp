@@ -65,7 +65,6 @@ void MainWindow::showMousePosition(QPointF &pos)
 
 void MainWindow::onPixelClicked(QPointF &pos)
 {
-    qDebug() << "entered here: " << pos.x() << ", "<< pos.y();
     if (!current_frame.empty())
     {
         cv::Size mat_size = current_frame.size();
