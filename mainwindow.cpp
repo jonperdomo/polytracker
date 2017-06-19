@@ -7,7 +7,7 @@
 #include <QImage>
 #include <QTableWidgetItem>
 #include <QPen>
-
+#include <QFile>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -112,6 +112,36 @@ void MainWindow::removeAllSceneLines()
     }
 }
 
+void MainWindow::savePointsToCSV(QString filename)
+{
+    QString text_data;
+    int row_count = ui->pointTable->rowCount();
+    text_data += QString("x,y,\n");
+    for (int row=0; row<row_count; row++)
+    {
+        QTableWidgetItem* item = ui->pointTable->item(row, 0);
+        if (item)
+        {
+            QStringList coordinate = item->text().split(",");
+            text_data += coordinate[0];
+            text_data += ",";
+            text_data += coordinate[1];
+            text_data += ",";
+            text_data += "\n";
+        }
+    }
+    QFile csv_file(filename);
+    if(csv_file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    {
+
+        QTextStream out(&csv_file);
+        out << text_data;
+
+        csv_file.close();
+    }
+    qDebug() << "saved all points: " << filename;
+}
+
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     cap.set(CV_CAP_PROP_POS_FRAMES, arg1-1);
@@ -121,9 +151,9 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 
     // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixel);
-    QRectF bounds = scene->itemsBoundingRect();
-    ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
-    ui->graphicsView->centerOn(0,0);
+    //QRectF bounds = scene->itemsBoundingRect();
+    //ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
+    //ui->graphicsView->centerOn(0,0);
 
     // Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
@@ -158,8 +188,7 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 void MainWindow::on_action_Open_triggered()
 {       
     // load a video
-    QString result;
-    result = QFileDialog::getOpenFileName(this, tr("Open Video File 2"), "/home", tr("Video Files (*.avi)"));
+    QString result = QFileDialog::getOpenFileName(this, tr("Open Video File 2"), "/home", tr("Video Files (*.avi)"));
     video_filepath = result.toUtf8().constData();
     QString video_filename = QString::fromStdString(video_filepath.substr(video_filepath.find_last_of("/\\") + 1));
     qDebug() << "filename: " << video_filename;
@@ -188,7 +217,7 @@ void MainWindow::on_action_Open_triggered()
 
     // 5X scale in inset view
     ui->insetView->scale(5,5);
-    ui->insetView->centerOn(0,0);
+    ui->insetView->centerOn(bounds.center());
 }
 
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
@@ -205,5 +234,16 @@ void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previ
     else
     {
         ui->deletePointButton->setEnabled(false);
+    }
+}
+
+void MainWindow::on_saveButton_clicked()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+        tr("Save pixel positions"), "",
+        tr("CSV (*.csv);;All Files (*)"));
+    if (!filename.trimmed().isEmpty())
+    {
+        savePointsToCSV(filename);
     }
 }

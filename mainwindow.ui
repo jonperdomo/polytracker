@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>703</width>
-    <height>383</height>
+    <height>428</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -98,7 +98,7 @@
          <item>
           <widget class="QPushButton" name="saveButton">
            <property name="enabled">
-            <bool>false</bool>
+            <bool>true</bool>
            </property>
            <property name="text">
             <string>Save to CSV</string>
