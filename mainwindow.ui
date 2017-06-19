@@ -78,7 +78,7 @@
            <string>(x, y)</string>
           </property>
           <property name="textAlignment">
-           <set>AlignCenter</set>
+           <set>AlignLeading|AlignVCenter</set>
           </property>
          </column>
         </widget>
@@ -108,7 +108,14 @@
         </layout>
        </item>
        <item>
-        <widget class="QGraphicsView" name="insetView"/>
+        <widget class="QGraphicsView" name="insetView">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>200</height>
+          </size>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
