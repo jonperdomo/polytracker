@@ -27,10 +27,12 @@ MainWindow::MainWindow(QWidget *parent) :
     //setWindowIcon(QIcon(logo));
 
     // Set up scene
-    pen = QPen(QColor(50,205,50), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
+    pen = QPen(QColor(50,205,50, 100), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
+    ui->insetView->setScene(scene);
+    ui->insetView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
 
     // Set up frame
     image_item = new ImageItem();
@@ -76,7 +78,12 @@ void MainWindow::onPixelClicked(QPointF &pos)
             QString text = QString("%1, %2").arg(x).arg(y);
             ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
             removeAllSceneEllipses();
+            removeAllSceneLines();
             ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+            scene->addLine(x-4, y, x+4, y, pen);
+            scene->addLine(x, y-4, x, y+4, pen);
+            // Update inset
+            ui->insetView->centerOn(x,y);
         }
     }
 }
@@ -89,6 +96,18 @@ void MainWindow::removeAllSceneEllipses()
         if (ellipse)
         {
             scene->removeItem(ellipse);
+        }
+    }
+}
+
+void MainWindow::removeAllSceneLines()
+{
+    foreach (QGraphicsItem *item, scene->items())
+    {
+        QGraphicsLineItem *line = qgraphicsitem_cast<QGraphicsLineItem *>(item);
+        if (line)
+        {
+            scene->removeItem(line);
         }
     }
 }
@@ -108,6 +127,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 
     // Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
+    removeAllSceneLines();
     QTableWidgetItem* item = ui->pointTable->item(ui->pointTable->currentRow(), 0);
     if (item)
     {
@@ -115,6 +135,8 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
         int x = (coordinate[0]).toInt();
         int y = (coordinate[1]).toInt();
         ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+        scene->addLine(x-4, y, x+4, y, pen);
+        scene->addLine(x, y-4, x, y+4, pen);
     }
 }
 
@@ -163,6 +185,10 @@ void MainWindow::on_action_Open_triggered()
     QRectF bounds = scene->itemsBoundingRect();
     ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
     ui->graphicsView->centerOn(0,0);
+
+    // 5X scale in inset view
+    ui->insetView->scale(5,5);
+    ui->insetView->centerOn(0,0);
 }
 
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)

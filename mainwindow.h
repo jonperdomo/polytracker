@@ -59,6 +59,7 @@ private:
     ImageItem *image_item;
     QGraphicsEllipseItem *ellipse_item;
     void removeAllSceneEllipses();
+    void removeAllSceneLines();
 };
 
 #endif // MAINWINDOW_H
