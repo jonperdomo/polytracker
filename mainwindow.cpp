@@ -1,17 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include <QHBoxLayout>
-#include <QFileDialog>
-#include <QString>
-#include <QDebug>
-#include <QImage>
-#include <QTableWidgetItem>
-#include <QPen>
-#include <QFile>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <string>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -177,7 +165,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     }
 
     // Determine what to track
-
+    //cv::Tracker
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)

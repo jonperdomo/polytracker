@@ -1,7 +1,5 @@
 #include "imageitem.h"
 
-#include <QDebug>
-
 ImageItem::ImageItem(QObject *parent)
 {
     // NOTE: May not need to track mouse movement at all times.

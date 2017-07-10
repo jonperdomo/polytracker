@@ -11,6 +11,13 @@
 #include <QImage>
 #include <QPixmap>
 #include <QGraphicsScene>
+#include <QFileDialog>
+#include <QString>
+#include <QDebug>
+#include <QImage>
+#include <QTableWidgetItem>
+#include <QPen>
+#include <QFile>
 
 #include "imageitem.h"
 
