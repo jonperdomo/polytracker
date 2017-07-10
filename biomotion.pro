@@ -4,8 +4,8 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
+QT += core gui \
+    charts
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = biomotion
@@ -24,15 +24,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-        main.cpp \
-        mainwindow.cpp \
+    main.cpp \
+    mainwindow.cpp \
     imageitem.cpp \
-    imageview.cpp
+    imageview.cpp \
+    chart.cpp
 
 HEADERS += \
-        mainwindow.h \
+    mainwindow.h \
     imageitem.h \
-    imageview.h
+    imageview.h \
+    chart.h
 
 FORMS += \
         mainwindow.ui

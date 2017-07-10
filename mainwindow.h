@@ -1,26 +1,25 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "chart.h"
+#include "imageitem.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/videoio/videoio.hpp>
+#include <QDebug>
+#include <QChartView>
 #include <QMainWindow>
 #include <QWidget>
-#include <string>
-#include <QImage>
-#include <QPixmap>
-#include <QGraphicsScene>
-#include <QFileDialog>
-#include <QString>
-#include <QDebug>
-#include <QImage>
-#include <QTableWidgetItem>
-#include <QPen>
 #include <QFile>
-
-#include "imageitem.h"
-
+#include <QFileDialog>
+#include <QGraphicsScene>
+#include <QImage>
+#include <QPen>
+#include <QPixmap>
+#include <QString>
+#include <QTableWidgetItem>
+#include <string>
 
 namespace Ui {
 class MainWindow;
@@ -44,24 +43,16 @@ private slots:
     void on_frameSpinBox_valueChanged(int arg1);
     void on_action_Open_triggered();
     void on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column);
-
     void on_saveButton_clicked();
 
 private:
     Ui::MainWindow *ui;
     std::string video_filepath;
     cv::VideoCapture cap;
-    int frame_count;
     QImage img;
-    QPixmap pixel;
     QPen pen;
     QGraphicsScene *scene;
-    QGraphicsEllipseItem *ellipse;
-    QGraphicsRectItem *rectangle;
-    QGraphicsTextItem *text;
-    QPixmap pix;
     ImageItem *image_item;
-    QGraphicsEllipseItem *ellipse_item;
     void removeAllSceneEllipses();
     void removeAllSceneLines();
     void drawCrosshair(int x, int y);

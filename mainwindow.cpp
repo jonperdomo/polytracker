@@ -102,7 +102,7 @@ void MainWindow::removeAllSceneLines()
 
 void MainWindow::drawCrosshair(int x, int y)
 {
-    ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+    scene->addEllipse( x-5, y-5, 10, 10, pen);
     scene->addLine(x-4, y, x+4, y, pen);
     scene->addLine(x, y-4, x, y+4, pen);
 }
@@ -144,10 +144,10 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-    pixel = QPixmap::fromImage(img);
+    QPixmap pixmap = QPixmap::fromImage(img);
 
     // Show in view, scaled to view bounds & keeping aspect ratio
-    image_item->setPixmap(pixel);
+    image_item->setPixmap(pixmap);
 
     // Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
@@ -173,10 +173,10 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     if (!current_frame.empty())
     {
         img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-        pixel = QPixmap::fromImage(img);
+        QPixmap pixmap = QPixmap::fromImage(img);
 
         // Show in view, scaled to view bounds & keeping aspect ratio
-        image_item->setPixmap(pixel);
+        image_item->setPixmap(pixmap);
         QRectF bounds = scene->itemsBoundingRect();
         ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
         ui->graphicsView->centerOn(0,0);
@@ -192,7 +192,7 @@ void MainWindow::on_action_Open_triggered()
     qDebug() << "filename: " << video_filename;
 
     cap = cv::VideoCapture(video_filepath);
-    frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
 
     // update ui elements
     ui->frameSlider->setEnabled(true);
@@ -206,10 +206,10 @@ void MainWindow::on_action_Open_triggered()
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-    pixel = QPixmap::fromImage(img);
+    QPixmap pixmap = QPixmap::fromImage(img);
 
     // Show in view, scaled to view bounds & keeping aspect ratio
-    image_item->setPixmap(pixel);
+    image_item->setPixmap(pixmap);
     QRectF bounds = scene->itemsBoundingRect();
     ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
     ui->graphicsView->centerOn(0,0);
