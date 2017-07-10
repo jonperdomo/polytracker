@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->pointTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->pointEditorPanel->hide();
+    ui->frameSlider->setEnabled(false);
 
     // Set window icon
     QPixmap logo = QPixmap(":/Logo/northern-red.png");
@@ -79,9 +80,8 @@ void MainWindow::onPixelClicked(QPointF &pos)
             ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
             removeAllSceneEllipses();
             removeAllSceneLines();
-            ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
-            scene->addLine(x-4, y, x+4, y, pen);
-            scene->addLine(x, y-4, x, y+4, pen);
+            drawCrosshair(x, y);
+
             // Update inset
             ui->insetView->centerOn(x,y);
         }
@@ -110,6 +110,13 @@ void MainWindow::removeAllSceneLines()
             scene->removeItem(line);
         }
     }
+}
+
+void MainWindow::drawCrosshair(int x, int y)
+{
+    ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
+    scene->addLine(x-4, y, x+4, y, pen);
+    scene->addLine(x, y-4, x, y+4, pen);
 }
 
 void MainWindow::savePointsToCSV(QString filename)
@@ -144,30 +151,33 @@ void MainWindow::savePointsToCSV(QString filename)
 
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
-    cap.set(CV_CAP_PROP_POS_FRAMES, arg1-1);
+    qDebug() << "frame update.";
+    int frame_index = arg1-1;
+    cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     pixel = QPixmap::fromImage(img);
 
     // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixel);
-    //QRectF bounds = scene->itemsBoundingRect();
-    //ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
-    //ui->graphicsView->centerOn(0,0);
 
     // Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
     removeAllSceneLines();
-    QTableWidgetItem* item = ui->pointTable->item(ui->pointTable->currentRow(), 0);
+    QTableWidgetItem* item = ui->pointTable->item(frame_index, 0);
     if (item)
     {
         QStringList coordinate = item->text().split(",");
         int x = (coordinate[0]).toInt();
         int y = (coordinate[1]).toInt();
-        ellipse_item = scene->addEllipse( x-5, y-5, 10, 10, pen);
-        scene->addLine(x-4, y, x+4, y, pen);
-        scene->addLine(x, y-4, x, y+4, pen);
+        drawCrosshair(x, y);
+
+        // Update inset
+        ui->insetView->centerOn(x,y);
     }
+
+    // Determine what to track
+
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -197,6 +207,7 @@ void MainWindow::on_action_Open_triggered()
     frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
 
     // update ui elements
+    ui->frameSlider->setEnabled(true);
     ui->pointEditorPanel->show();
     ui->pointTable->setRowCount(frame_count);
     ui->frameSlider->setRange(1, frame_count);

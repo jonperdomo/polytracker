@@ -7,14 +7,10 @@
 #include <opencv2/videoio/videoio.hpp>
 #include <QMainWindow>
 #include <QWidget>
-#include <QLabel>
 #include <string>
 #include <QImage>
 #include <QPixmap>
-
 #include <QGraphicsScene>
-#include <QGraphicsItem>
-#include <QGraphicsView>
 
 #include "imageitem.h"
 
@@ -46,7 +42,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QLabel *video_label;
     std::string video_filepath;
     cv::VideoCapture cap;
     int frame_count;
@@ -62,6 +57,7 @@ private:
     QGraphicsEllipseItem *ellipse_item;
     void removeAllSceneEllipses();
     void removeAllSceneLines();
+    void drawCrosshair(int x, int y);
     void savePointsToCSV(QString filename);
 };
 
