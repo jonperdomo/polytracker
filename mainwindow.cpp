@@ -28,6 +28,16 @@ MainWindow::MainWindow(QWidget *parent) :
     image_item->setPixmap(logo);
     scene->addItem(image_item);
 
+    // Set up chart
+    chart = new Chart;
+    chart->setTitle("Dynamic spline chart");
+    chart->legend()->hide();
+    chart->setAnimationOptions(QChart::AllAnimations);
+    chart_view = new QChartView(chart);
+    chart_view->setRenderHint(QPainter::Antialiasing);
+    chart_view->setFixedSize(300,400);
+    ui->chartLayout->addWidget(chart_view);
+
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));

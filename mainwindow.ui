@@ -57,6 +57,9 @@
      <widget class="QWidget" name="pointEditorPanel" native="true">
       <layout class="QVBoxLayout" name="tableLayout">
        <item>
+        <layout class="QHBoxLayout" name="chartLayout"/>
+       </item>
+       <item>
         <widget class="QComboBox" name="videoComboBox"/>
        </item>
        <item>
@@ -204,12 +207,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>381</x>
-     <y>345</y>
+     <x>411</x>
+     <y>390</y>
     </hint>
     <hint type="destinationlabel">
      <x>53</x>
-     <y>349</y>
+     <y>394</y>
     </hint>
    </hints>
   </connection>
@@ -220,12 +223,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>334</y>
+     <x>31</x>
+     <y>394</y>
     </hint>
     <hint type="destinationlabel">
-     <x>87</x>
-     <y>341</y>
+     <x>147</x>
+     <y>390</y>
     </hint>
    </hints>
   </connection>

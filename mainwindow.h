@@ -53,6 +53,8 @@ private:
     QPen pen;
     QGraphicsScene *scene;
     ImageItem *image_item;
+    Chart *chart;
+    QChartView *chart_view;
     void removeAllSceneEllipses();
     void removeAllSceneLines();
     void drawCrosshair(int x, int y);
