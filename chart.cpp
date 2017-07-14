@@ -28,11 +28,6 @@
 ****************************************************************************/
 
 #include "chart.h"
-#include <QtCharts/QAbstractAxis>
-#include <QtCharts/QSplineSeries>
-#include <QtCharts/QValueAxis>
-#include <QtCore/QTime>
-#include <QtCore/QDebug>
 
 Chart::Chart(QGraphicsItem *parent, Qt::WindowFlags wFlags):
     QChart(QChart::ChartTypeCartesian, parent, wFlags),
@@ -42,10 +37,10 @@ Chart::Chart(QGraphicsItem *parent, Qt::WindowFlags wFlags):
     m_x(5),
     m_y(1)
 {
-    qsrand((uint) QTime::currentTime().msec());
+    //qsrand((uint) QTime::currentTime().msec());
 
-    QObject::connect(&m_timer, SIGNAL(timeout()), this, SLOT(handleTimeout()));
-    m_timer.setInterval(1000);
+    //QObject::connect(&m_timer, SIGNAL(timeout()), this, SLOT(handleTimeout()));
+    //m_timer.setInterval(1000);
 
     m_series = new QSplineSeries(this);
     QPen green(Qt::red);
@@ -60,7 +55,7 @@ Chart::Chart(QGraphicsItem *parent, Qt::WindowFlags wFlags):
     axisX()->setRange(0, 10);
     axisY()->setRange(-5, 10);
 
-    m_timer.start();
+    //m_timer.start();
 }
 
 Chart::~Chart()

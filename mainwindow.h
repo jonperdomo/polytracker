@@ -7,6 +7,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/videoio/videoio.hpp>
+#include <opencv2/video/tracking.hpp>
 #include <QDebug>
 #include <QChartView>
 #include <QMainWindow>
@@ -21,6 +22,8 @@
 #include <QTableWidgetItem>
 #include <string>
 
+using namespace cv;
+
 namespace Ui {
 class MainWindow;
 }
@@ -31,6 +34,8 @@ class MainWindow : public QMainWindow
 
 public:
     cv::Mat current_frame;
+    cv::Rect2d roi;
+
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 

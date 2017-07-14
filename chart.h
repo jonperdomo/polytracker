@@ -30,8 +30,13 @@
 #ifndef CHART_H
 #define CHART_H
 
-#include <QtCharts/QChart>
-#include <QtCore/QTimer>
+#include <QChart>
+#include <QTimer>
+#include <QAbstractAxis>
+#include <QSplineSeries>
+#include <QValueAxis>
+#include <QTime>
+#include <QDebug>
 
 QT_CHARTS_BEGIN_NAMESPACE
 class QSplineSeries;

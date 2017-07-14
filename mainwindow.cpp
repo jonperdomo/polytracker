@@ -151,10 +151,27 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     qDebug() << "frame update.";
     int frame_index = arg1-1;
-    cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
-    cap.read(current_frame);
-    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-    QPixmap pixmap = QPixmap::fromImage(img);
+    //cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+    //cap.read(current_frame);
+    QPixmap pixmap;
+    // Subtract
+    if (frame_index > 0)
+    {
+        cv::Mat prev;
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index-1);
+        cap.read(prev);
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+        cap.read(current_frame);
+        cv::Mat dest;
+        cv::subtract(prev, current_frame, dest);
+        img = QImage((uchar*) dest.data, dest.cols, dest.rows, dest.step, QImage::Format_RGB888);
+        pixmap = QPixmap::fromImage(img);
+    } else {
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+        cap.read(current_frame);
+        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+        pixmap = QPixmap::fromImage(img);
+    }
 
     // Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixmap);
@@ -227,6 +244,10 @@ void MainWindow::on_action_Open_triggered()
     // 5X scale in inset view
     ui->insetView->scale(5,5);
     ui->insetView->centerOn(bounds.center());
+
+    // Set up chart
+    chart->axisX()->setRange(1, frame_count);
+    //chart->axisY()->setRange();
 }
 
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
