@@ -151,32 +151,45 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     qDebug() << "frame update.";
     int frame_index = arg1-1;
-    //cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
-    //cap.read(current_frame);
-    QPixmap pixmap;
-    // Subtract
-    if (frame_index > 0)
-    {
-        cv::Mat prev;
-        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index-1);
-        cap.read(prev);
-        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
-        cap.read(current_frame);
-        cv::Mat dest;
-        cv::subtract(prev, current_frame, dest);
-        img = QImage((uchar*) dest.data, dest.cols, dest.rows, dest.step, QImage::Format_RGB888);
-        pixmap = QPixmap::fromImage(img);
-    } else {
-        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
-        cap.read(current_frame);
-        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-        pixmap = QPixmap::fromImage(img);
-    }
+    cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+    cap.read(current_frame);
 
-    // Show in view, scaled to view bounds & keeping aspect ratio
+    int thresh = 100;
+    int max_thresh = 255;
+    cv::RNG rng(12345);
+
+    /// Convert image to gray and blur it
+    cv::Mat src_gray;
+    cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+    cv::blur(src_gray, src_gray, cv::Size(3,3));
+
+    cv::Mat canny_output;
+    std::vector<std::vector<cv::Point> > contours;
+    std::vector<cv::Vec4i> hierarchy;
+
+    /// Detect edges using canny
+    cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+
+    /// Find contours
+    findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+    /// Draw contours
+    //cv::Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+    for(int i = 0; i< contours.size(); i++)
+       {
+         cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+         drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+       }
+
+    /// Show in a window
+    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+    QPixmap pixmap;
+    pixmap = QPixmap::fromImage(img);
+
+    /// Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixmap);
 
-    // Determine where to place the ellipse based on the frame value and its associated (x,y) position
+    /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
     removeAllSceneLines();
     QTableWidgetItem* item = ui->pointTable->item(frame_index, 0);
@@ -187,12 +200,9 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
         int y = (coordinate[1]).toInt();
         drawCrosshair(x, y);
 
-        // Update inset
+        /// Update inset
         ui->insetView->centerOn(x,y);
     }
-
-    // Determine what to track
-    //cv::Tracker
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -229,6 +239,14 @@ void MainWindow::on_action_Open_triggered()
     ui->frameSpinBox->setRange(1, frame_count);
     ui->videoComboBox->addItem(video_filename);
 
+
+
+
+    // Find contours
+
+
+
+
     // show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     cap.read(current_frame);
@@ -246,8 +264,7 @@ void MainWindow::on_action_Open_triggered()
     ui->insetView->centerOn(bounds.center());
 
     // Set up chart
-    chart->axisX()->setRange(1, frame_count);
-    //chart->axisY()->setRange();
+    chart->axisX()->setRange(1, frame_count);    
 }
 
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
