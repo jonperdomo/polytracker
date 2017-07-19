@@ -154,6 +154,12 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
 
+
+
+
+    ///------------------------------------------------------------
+
+
     int thresh = 100;
     int max_thresh = 255;
     cv::RNG rng(12345);
@@ -171,15 +177,36 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
 
     /// Find contours
-    findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+    cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+    /// Find bounding rects
+    std::vector<cv::Rect> boundRect(contours.size());
+    qDebug() << "cont size: " << contours.size();
+    for (int i = 0; i< contours.size(); i++)
+    {
+        boundRect[i] = cv::boundingRect(contours.at(i));
+    }
 
     /// Draw contours
     //cv::Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
-    for(int i = 0; i< contours.size(); i++)
-       {
-         cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-         drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
-       }
+    std::vector<std::vector<cv::Point> > tracked_contours;
+    for (int i = 0; i< contours.size(); i++)
+    {
+        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        tracked_contours.push_back(contours.at(i));
+//        if (cv::isContourConvex(contours.at(i)))
+        cv::drawContours(current_frame, tracked_contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+//        cv::rectangle(current_frame, boundRect[i].tl(), boundRect[i].br(), color, 1, 8, 0);
+//         cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+//        double area = cv::contourArea(contours.at(i));
+//        qDebug() << "area: " << area;
+    }
+
+
+    ///------------------------------------------------------------
+
+
+
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -239,31 +266,143 @@ void MainWindow::on_action_Open_triggered()
     ui->frameSpinBox->setRange(1, frame_count);
     ui->videoComboBox->addItem(video_filename);
 
+    /// --------------------------------------------------------------------------------------------
 
 
+    /// Find contours
+    int thresh = 100;
+    int max_thresh = 255;
+    cv::RNG rng(12345);
+    cv::Mat src_gray;
+    cv::Mat canny_output;
+    std::vector<std::vector<std::vector<cv::Point>>> frame_contours(frame_count);
+    std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies(frame_count);
+    std::vector<std::vector<cv::Point> > frame_contour_centroids(frame_count);
+    std::vector<std::vector<cv::Point> > tracked_contours;
+    std::vector<cv::Vec4i> hierarchy;
+    for (int i=0; i<frame_count; i++)
+//    for (int i=0; i<1; i++)
+    {
+        cap.set(CV_CAP_PROP_POS_FRAMES, i);
+        cap.read(current_frame);
 
-    // Find contours
+        /// Convert image to gray and blur it
+        cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+        cv::blur(src_gray, src_gray, cv::Size(3,3));
+
+        /// Detect edges using canny
+        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+
+        /// Find contours
+        std::vector<std::vector<cv::Point>> contours;
+        cv::findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        frame_contours.push_back(contours);
+        frame_hierarchies.push_back(hierarchy);
+
+        /// Find mean of each contour
+        std::vector<cv::Point> points;
+        for(int j=0; j<contours.size(); j++)
+        {
+            points = contours.at(j);
+            cv::Point zero(0.0f, 0.0f);
+            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
+            cv::Point mean_point(sum * (1.0f / points.size()));
+            //qDebug() << "center: " << mean_point.x << ", " << mean_point.y;
+            frame_contour_centroids[i].push_back(mean_point);
+        }
+    }
+    qDebug() << "done contouring.";
+
+    /// Match contours
+    std::vector<cv::Point> first_set = frame_contour_centroids[0];
+    cv::Point first_point = first_set.at(0);
+//    std::vector<std::vector<int>> matches;
+    std::vector<int> matches(frame_count);
+    for (int i=1; i<frame_count-1; i++)
+    {
+        std::vector<cv::Point> next_set = frame_contour_centroids[i];
+        int match = -1;
+        double best = current_frame.cols;
+        //qDebug() << "contour count 2: " << next_set.size();
+        for (int j=0; j<next_set.size(); j++)
+        {
+            cv::Point next_point = next_set.at(j);
+            double dist = cv::norm(first_point - next_point);
+            if (dist < best)
+            {
+                best = dist;
+                match = j;
+            } else if (dist > 25) {
+                //qDebug() << "breaking at: " << j;
+                break;
+            }
+        }
+        matches[i] = match;
+        //qDebug() << "\nframe: " << i << "\nindex: " << match << "\ndistance: " << best;
+    }
+    qDebug() << "done matching." << matches;
+
+//    cv::Mat b = current_frame.clone();
+//    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+//    cv::drawContours(b, frame_contours.at(0), 50, color, 2, 8, frame_hierarchies.at(0), 0, cv::Point());
+//    cv::drawContours(b, frame_contours.at(1), 40, color, 2, 8, frame_hierarchies.at(1), 0, cv::Point());
+//    cv::namedWindow("w1", cv::WINDOW_AUTOSIZE);// Create a window for display.
+//    cv::imshow("w1", b);
+//    cv::waitKey(0);
+
+//            cap.set(CV_CAP_PROP_POS_FRAMES, j);
+//            cap.read(frame);
+
+//            /// Convert image to gray and blur it
+//            cv::cvtColor(frame, src_gray, CV_BGR2GRAY);
+//            cv::blur(src_gray, src_gray, cv::Size(3,3));
+
+//            /// Detect edges using canny
+//            cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+
+//            /// Find contours
+//            cv::findContours(canny_output, frame_contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+//            /// Compare contours
+//            qDebug() << "contour size: " << contours.size();
+//            for(int j=0; j<contours.size(); j++)
+//            {
+//                match = cv::matchShapes(contours.at(j), frame_contours.at(j), CV_CONTOURS_MATCH_I1, 0);
+//                qDebug() << "comparing " << j << " and " << j << ": " << match;
+//            }
+
+//            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+//            cv::drawContours(current_frame, contours, j, color, 2, 8, hierarchy, 0, cv::Point());
+
+        /// Show in a window
+//        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+//        QPixmap pixmap;
+//        pixmap = QPixmap::fromImage(img);
+
+        /// Show in view, scaled to view bounds & keeping aspect ratio
+//        image_item->setPixmap(pixmap);
 
 
+    /// --------------------------------------------------------------------------------------------
 
 
-    // show frame zero
+    /// show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
     cap.read(current_frame);
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
     QPixmap pixmap = QPixmap::fromImage(img);
 
-    // Show in view, scaled to view bounds & keeping aspect ratio
+    /// Show in view, scaled to view bounds & keeping aspect ratio
     image_item->setPixmap(pixmap);
     QRectF bounds = scene->itemsBoundingRect();
     ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
     ui->graphicsView->centerOn(0,0);
 
-    // 5X scale in inset view
+    /// 5X scale in inset view
     ui->insetView->scale(5,5);
     ui->insetView->centerOn(bounds.center());
 
-    // Set up chart
+    /// Set up chart
     chart->axisX()->setRange(1, frame_count);    
 }
 
