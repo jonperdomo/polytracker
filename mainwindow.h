@@ -54,6 +54,8 @@ private:
     Ui::MainWindow *ui;
     std::string video_filepath;
     cv::VideoCapture cap;
+    std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
+    std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies;
     QImage img;
     QPen pen;
     QGraphicsScene *scene;

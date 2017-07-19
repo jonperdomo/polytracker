@@ -187,26 +187,17 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
         boundRect[i] = cv::boundingRect(contours.at(i));
     }
 
+    std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
+    frame_contours.push_back(contours);
+
     /// Draw contours
-    //cv::Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
-    std::vector<std::vector<cv::Point> > tracked_contours;
     for (int i = 0; i< contours.size(); i++)
     {
         cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-        tracked_contours.push_back(contours.at(i));
-//        if (cv::isContourConvex(contours.at(i)))
-        cv::drawContours(current_frame, tracked_contours, i, color, 1, 8, hierarchy, 0, cv::Point());
-//        cv::rectangle(current_frame, boundRect[i].tl(), boundRect[i].br(), color, 1, 8, 0);
-//         cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
-//        double area = cv::contourArea(contours.at(i));
-//        qDebug() << "area: " << area;
+        cv::drawContours(current_frame, frame_contours.at(0), i, color, 1, 8, hierarchy, 0, cv::Point());
     }
 
-
     ///------------------------------------------------------------
-
-
-
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -275,13 +266,13 @@ void MainWindow::on_action_Open_triggered()
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
-    std::vector<std::vector<std::vector<cv::Point>>> frame_contours(frame_count);
-    std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies(frame_count);
+    //std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
+    //std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies;
     std::vector<std::vector<cv::Point> > frame_contour_centroids(frame_count);
     std::vector<std::vector<cv::Point> > tracked_contours;
     std::vector<cv::Vec4i> hierarchy;
+    int least_contours = 200;
     for (int i=0; i<frame_count; i++)
-//    for (int i=0; i<1; i++)
     {
         cap.set(CV_CAP_PROP_POS_FRAMES, i);
         cap.read(current_frame);
@@ -295,12 +286,16 @@ void MainWindow::on_action_Open_triggered()
 
         /// Find contours
         std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(canny_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
         frame_contours.push_back(contours);
         frame_hierarchies.push_back(hierarchy);
 
         /// Find mean of each contour
         std::vector<cv::Point> points;
+        if (contours.size() < least_contours)
+        {
+            least_contours = contours.size();
+        }
         for(int j=0; j<contours.size(); j++)
         {
             points = contours.at(j);
@@ -311,76 +306,86 @@ void MainWindow::on_action_Open_triggered()
             frame_contour_centroids[i].push_back(mean_point);
         }
     }
-    qDebug() << "done contouring.";
+    qDebug() << "done contouring. least count: " << least_contours;
 
-    /// Match contours
-    std::vector<cv::Point> first_set = frame_contour_centroids[0];
-    cv::Point first_point = first_set.at(0);
-//    std::vector<std::vector<int>> matches;
-    std::vector<int> matches(frame_count);
-    for (int i=1; i<frame_count-1; i++)
+    /// Instead of comparing the first with all the next,
+    /// Only compare the first with the second, the second with the third, etc.
+    /// Better matches.
+    std::vector<std::vector<int>> matches(frame_count);
+    std::vector<cv::Point> first_set = frame_contour_centroids.at(0);
+
+    for (int i=0; i<1; i++)
     {
-        std::vector<cv::Point> next_set = frame_contour_centroids[i];
-        int match = -1;
-        double best = current_frame.cols;
-        //qDebug() << "contour count 2: " << next_set.size();
-        for (int j=0; j<next_set.size(); j++)
+        std::vector<std::vector<cv::Point>> first_contours = frame_contours.at(i);
+        //cv::Point first_point = first_set.at(i);
+        //std::vector<double> all_intersects;
+
+        for (int j=0; j<first_contours.size(); j++)
         {
-            cv::Point next_point = next_set.at(j);
-            double dist = cv::norm(first_point - next_point);
-            if (dist < best)
+            std::vector<cv::Point> first_contour = first_contours.at(j);
+            cv::Rect first_rect = cv::boundingRect(first_contour);
+            std::vector<int> matches;
+            for (int k=1; k<frame_count; k++)
             {
-                best = dist;
-                match = j;
-            } else if (dist > 25) {
-                //qDebug() << "breaking at: " << j;
-                break;
+                std::vector<std::vector<cv::Point>> next_contours = frame_contours.at(k);
+                int match = -1;
+                double intersect_area = 0;
+                //std::vector<double> intersects;
+                for (int l=1; l<next_contours.size(); l++)
+                {
+                    std::vector<cv::Point> next_contour = next_contours.at(l);
+                    cv::Rect rect = cv::boundingRect(next_contour);
+                    double area = (first_rect & rect).area();
+                    if (area > intersect_area)
+                    {
+                        intersect_area = area;
+                        //intersects.push_back(area);
+                        match = l;
+                    }
+                }
+                matches.push_back(match);
+                qDebug() << k << ": Best intersect = " << intersect_area;
             }
+            qDebug() << j << " matches " << matches;
         }
-        matches[i] = match;
-        //qDebug() << "\nframe: " << i << "\nindex: " << match << "\ndistance: " << best;
+        //qDebug() << j << " and " << j << "intersects: " << intersects;
+
     }
-    qDebug() << "done matching." << matches;
 
-//    cv::Mat b = current_frame.clone();
-//    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-//    cv::drawContours(b, frame_contours.at(0), 50, color, 2, 8, frame_hierarchies.at(0), 0, cv::Point());
-//    cv::drawContours(b, frame_contours.at(1), 40, color, 2, 8, frame_hierarchies.at(1), 0, cv::Point());
-//    cv::namedWindow("w1", cv::WINDOW_AUTOSIZE);// Create a window for display.
-//    cv::imshow("w1", b);
-//    cv::waitKey(0);
-
-//            cap.set(CV_CAP_PROP_POS_FRAMES, j);
-//            cap.read(frame);
-
-//            /// Convert image to gray and blur it
-//            cv::cvtColor(frame, src_gray, CV_BGR2GRAY);
-//            cv::blur(src_gray, src_gray, cv::Size(3,3));
-
-//            /// Detect edges using canny
-//            cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
-
-//            /// Find contours
-//            cv::findContours(canny_output, frame_contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-//            /// Compare contours
-//            qDebug() << "contour size: " << contours.size();
-//            for(int j=0; j<contours.size(); j++)
+//    /// Match contours
+//    std::vector<cv::Point> first_set = frame_contour_centroids[0];
+////    cv::Point first_point = first_set.at(0);
+//    std::vector<std::vector<int>> matches(frame_count);
+////    std::vector<int> matches(frame_count);
+//    qDebug() << "contours size: " << first_set.size();
+//    for (int q=0; q<3; q++)
+//    {
+//        cv::Point first_point = first_set.at(q);
+//        for (int i=1; i<frame_count-1; i++)
+//        {
+//            std::vector<cv::Point> next_set = frame_contour_centroids[i];
+//            int match = -1;
+//            double best = current_frame.cols;
+//            //qDebug() << "contour count 2: " << next_set.size();
+//            for (int j=0; j<next_set.size(); j++)
 //            {
-//                match = cv::matchShapes(contours.at(j), frame_contours.at(j), CV_CONTOURS_MATCH_I1, 0);
-//                qDebug() << "comparing " << j << " and " << j << ": " << match;
+//                cv::Point next_point = next_set.at(j);
+//                double dist = cv::norm(first_point - next_point);
+//                if (dist < best)
+//                {
+//                    best = dist;
+//                    match = j;
+//                }
+//    //            } else if (dist > 25) {
+//    //                qDebug() << "breaking at: " << j << " dist: " << best;
+//    //                break;
+//    //            }
 //            }
-
-//            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-//            cv::drawContours(current_frame, contours, j, color, 2, 8, hierarchy, 0, cv::Point());
-
-        /// Show in a window
-//        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-//        QPixmap pixmap;
-//        pixmap = QPixmap::fromImage(img);
-
-        /// Show in view, scaled to view bounds & keeping aspect ratio
-//        image_item->setPixmap(pixmap);
+//            matches[q].push_back(match);
+////        qDebug() << "\nframe: " << i << "\nindex: " << match << "\ndistance: " << best;
+//        }
+//        qDebug() << "done matching." << matches.at(q);
+//    }
 
 
     /// --------------------------------------------------------------------------------------------
