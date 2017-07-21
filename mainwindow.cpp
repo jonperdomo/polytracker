@@ -290,73 +290,53 @@ void MainWindow::on_action_Open_triggered()
         cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
 
         /// Find contours
-        std::vector<std::vector<cv::Point>> contours;
-        cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        ContourList initial_contours;
+        cv::findContours(canny_output, initial_contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+        ContourList contours;
+        contours.resize(initial_contours.size());
+        for(int k=0; k < initial_contours.size(); k++)
+        {
+            cv::approxPolyDP(initial_contours.at(k), contours[k], 3, true);
+            //cv::convexHull(initial_contours.at(k), contours[k], false, true);
+        }
+
         frame_contours.push_back(contours);
         frame_hierarchies.push_back(hierarchy);
-
-        /// Find mean of each contour
-        std::vector<cv::Point> points;
-        if (contours.size() < least_contours)
-        {
-            least_contours = contours.size();
-        }
-        for(int j=0; j<contours.size(); j++)
-        {
-            points = contours.at(j);
-            cv::Point zero(0.0f, 0.0f);
-            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
-            cv::Point mean_point(sum * (1.0f / points.size()));
-            //qDebug() << "center: " << mean_point.x << ", " << mean_point.y;
-            frame_contour_centroids[i].push_back(mean_point);
-        }
     }
     qDebug() << "done contouring. least count: " << least_contours;
 
-    //    /// Instead of comparing the first with all the next,
-    //    /// Only compare the first with the second, the second with the third, etc.
-    //    /// Better matches.
-    //    std::vector<std::vector<int>> matches(frame_count);
-    //    std::vector<cv::Point> first_set = frame_contour_centroids.at(0);
+    /// Instead of comparing the first with all the next,
+    /// Only compare the first with the second, the second with the third, etc.
+    /// Better matches.
+    std::vector<std::tuple<int, double>> ctr_matches;
+    std::vector<std::vector<cv::Point>> left_ctr_set = frame_contours.at(0);
+    std::vector<std::vector<cv::Point>> right_ctr_set = frame_contours.at(1);
+    for (int j=0; j<left_ctr_set.size(); j++)
+    {
+        std::vector<cv::Point> left_ctr = left_ctr_set.at(j);
+        cv::Rect left_rect = cv::boundingRect(left_ctr);
 
-    //    for (int i=0; i<1; i++)
-    //    {
-    //        std::vector<std::vector<cv::Point>> first_contours = frame_contours.at(i);
-    //        //cv::Point first_point = first_set.at(i);
-    //        //std::vector<double> all_intersects;
-
-    //        for (int j=0; j<first_contours.size(); j++)
-    //        {
-    //            std::vector<cv::Point> first_contour = first_contours.at(j);
-    //            cv::Rect first_rect = cv::boundingRect(first_contour);
-    //            std::vector<int> matches;
-    //            for (int k=1; k<frame_count; k++)
-    //            {
-    //                std::vector<std::vector<cv::Point>> next_contours = frame_contours.at(k);
-    //                int match = -1;
-    //                double intersect_area = 0;
-    //                //std::vector<double> intersects;
-    //                for (int l=1; l<next_contours.size(); l++)
-    //                {
-    //                    std::vector<cv::Point> next_contour = next_contours.at(l);
-    //                    cv::Rect rect = cv::boundingRect(next_contour);
-    //                    double area = (first_rect & rect).area();
-    //                    if (area > intersect_area)
-    //                    {
-    //                        intersect_area = area;
-    //                        //intersects.push_back(area);
-    //                        match = l;
-    //                    }
-    //                }
-    //                matches.push_back(match);
-    //                qDebug() << k << ": Best intersect = " << intersect_area;
-    //            }
-    //            qDebug() << j << " matches " << matches;
-    //        }
-    //        //qDebug() << j << " and " << j << "intersects: " << intersects;
-
-    //    }
-
+        int match = -1;
+        double best_intersect = 0;
+        for (int k=0; k<right_ctr_set.size(); k++)
+        {
+            std::vector<cv::Point> right_ctr = right_ctr_set.at(k);
+            cv::Rect right_rect = cv::boundingRect(right_ctr);
+            //double area = (left_ctr & right_ctr).area();
+            double area = (left_rect & right_rect).area();
+            ///http://answers.opencv.org/question/37392/how-to-compute-intersections-of-two-contours/
+            /// Find area of intersection bw these 2 closed contours
+            if (area > best_intersect)
+            {
+                best_intersect = area;
+                match = k;
+            }
+        }
+        ctr_matches.push_back(std::tuple<int, double>(match, best_intersect));
+    }
+    std::sort(ctr_matches.begin(), ctr_matches.end(), [](std::tuple<int, double> const& n1, std::tuple<int, double> const& n2) {return std::get<1>(n1) > std::get<1>(n2);});
+    qDebug() << "matches.";
 
     /// --------------------------------------------------------------------------------------------
 

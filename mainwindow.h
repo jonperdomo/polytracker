@@ -22,6 +22,14 @@
 #include <QTableWidgetItem>
 #include <string>
 
+typedef std::vector<cv::Point> Contour;
+typedef std::vector<Contour> ContourList;
+typedef std::vector<ContourList> ContourListSet;
+
+typedef std::vector<cv::Vec<int, 4>> Hierarchy;
+typedef std::vector<Hierarchy> HierarchyListSet;
+//typedef std::vector<std::vector<cv::Vec<int, 4>>> HierarchyListSet;
+
 namespace Ui {
 class MainWindow;
 }
@@ -54,8 +62,8 @@ private:
     Ui::MainWindow *ui;
     std::string video_filepath;
     cv::VideoCapture cap;
-    std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
-    std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies;
+    ContourListSet frame_contours;
+    HierarchyListSet frame_hierarchies;
     QImage img;
     QPen pen;
     QGraphicsScene *scene;
