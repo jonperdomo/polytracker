@@ -156,51 +156,27 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
 
-
-
-
     ///------------------------------------------------------------
-
-
-    int thresh = 100;
-    int max_thresh = 255;
-    cv::RNG rng(12345);
-
-    /// Convert image to gray and blur it
-    cv::Mat src_gray;
-    cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
-    cv::blur(src_gray, src_gray, cv::Size(3,3));
-
-    cv::Mat canny_output;
-    std::vector<std::vector<cv::Point> > contours;
-    std::vector<cv::Vec4i> hierarchy;
-
-    /// Detect edges using canny
-    cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
-
-    /// Find contours
-    //cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-    contours = frame_contours.at(frame_index);
-    hierarchy = frame_hierarchies.at(frame_index);
-
-    /// Find bounding rects
-    std::vector<cv::Rect> boundRect(contours.size());
-    qDebug() << "cont size: " << contours.size();
-    for (int i = 0; i< contours.size(); i++)
-    {
-        boundRect[i] = cv::boundingRect(contours.at(i));
-    }
-
-    std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
-    frame_contours.push_back(contours);
+    ContourList contours = frame_contours.at(frame_index);
+    Hierarchy hierarchy = frame_hierarchies.at(frame_index);
 
     /// Draw contours
-    for (int i = 0; i< contours.size(); i++)
+    cv::RNG rng(12345);
+    if (frame_index > 1)
     {
-        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-        cv::drawContours(current_frame, frame_contours.at(0), i, color, 1, 8, hierarchy, 0, cv::Point());
+        for (int i = 0; i< contours.size(); i++)
+        {
+            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+            cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+        }
+    } else {
+        std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
+        for (int i=0; i< contours.size(); i++)
+        {
+            cv::Scalar color = color_set.at(i);
+            cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+        }
     }
-
     ///------------------------------------------------------------
 
     /// Show in a window
@@ -301,7 +277,7 @@ void MainWindow::on_action_Open_triggered()
             //cv::convexHull(initial_contours.at(k), contours[k], false, true);
         }
 
-        frame_contours.push_back(contours);
+        frame_contours.push_back(initial_contours);
         frame_hierarchies.push_back(hierarchy);
     }
     qDebug() << "done contouring. least count: " << least_contours;
@@ -309,33 +285,61 @@ void MainWindow::on_action_Open_triggered()
     /// Instead of comparing the first with all the next,
     /// Only compare the first with the second, the second with the third, etc.
     /// Better matches.
-    std::vector<std::tuple<int, double>> ctr_matches;
-    std::vector<std::vector<cv::Point>> left_ctr_set = frame_contours.at(0);
-    std::vector<std::vector<cv::Point>> right_ctr_set = frame_contours.at(1);
+    //std::vector<std::tuple<int, double>> ctr_matches;
+    ContourList left_ctr_set = frame_contours.at(0);
+    ContourList right_ctr_set = frame_contours.at(1);
+    ContourList right_ctr_match_set(right_ctr_set.size());
     for (int j=0; j<left_ctr_set.size(); j++)
     {
         std::vector<cv::Point> left_ctr = left_ctr_set.at(j);
         cv::Rect left_rect = cv::boundingRect(left_ctr);
-
         int match = -1;
         double best_intersect = 0;
+        Contour right_ctr_match;
         for (int k=0; k<right_ctr_set.size(); k++)
         {
-            std::vector<cv::Point> right_ctr = right_ctr_set.at(k);
+            Contour right_ctr = right_ctr_set.at(k);
             cv::Rect right_rect = cv::boundingRect(right_ctr);
-            //double area = (left_ctr & right_ctr).area();
             double area = (left_rect & right_rect).area();
-            ///http://answers.opencv.org/question/37392/how-to-compute-intersections-of-two-contours/
-            /// Find area of intersection bw these 2 closed contours
             if (area > best_intersect)
             {
                 best_intersect = area;
-                match = k;
+                //match = k;
+                right_ctr_match = right_ctr;
             }
         }
-        ctr_matches.push_back(std::tuple<int, double>(match, best_intersect));
+        right_ctr_match_set[j] = right_ctr_match;
+        //ctr_matches.push_back(std::tuple<int, double>(match, best_intersect));
     }
-    std::sort(ctr_matches.begin(), ctr_matches.end(), [](std::tuple<int, double> const& n1, std::tuple<int, double> const& n2) {return std::get<1>(n1) > std::get<1>(n2);});
+    frame_contours[1] = right_ctr_match_set;
+
+
+    int max_size;
+    if (left_ctr_set.size() > right_ctr_set.size())
+    {
+        max_size = left_ctr_set.size();
+    } else {
+        max_size = right_ctr_set.size();
+    }
+    std::vector<cv::Scalar> left_colors;
+    std::vector<cv::Scalar> right_colors;
+    for (int i=0; i< max_size; i++)
+    {
+        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        left_colors.push_back(color);
+        right_colors.push_back(color);
+    }
+    contour_colors.push_back(left_colors);
+    contour_colors.push_back(right_colors);
+    //std::sort(ctr_matches.begin(), ctr_matches.end(), [](std::tuple<int, double> const& n1, std::tuple<int, double> const& n2) {return std::get<1>(n1) > std::get<1>(n2);});
+
+
+    //while (ctr_matches.size() > min_size)
+    //{
+    //    ctr_matches.pop_back();
+    //}
+    //std::swap(ctr_matches[0], ctr_matches.back());
+
     qDebug() << "matches.";
 
     /// --------------------------------------------------------------------------------------------

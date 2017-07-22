@@ -28,6 +28,8 @@ typedef std::vector<ContourList> ContourListSet;
 
 typedef std::vector<cv::Vec<int, 4>> Hierarchy;
 typedef std::vector<Hierarchy> HierarchyListSet;
+
+typedef std::vector<std::vector<cv::Scalar>> ColorListSet;
 //typedef std::vector<std::vector<cv::Vec<int, 4>>> HierarchyListSet;
 
 namespace Ui {
@@ -62,8 +64,10 @@ private:
     Ui::MainWindow *ui;
     std::string video_filepath;
     cv::VideoCapture cap;
+    std::vector<std::tuple<int, double>> ctr_matches;
     ContourListSet frame_contours;
     HierarchyListSet frame_hierarchies;
+    ColorListSet contour_colors;
     QImage img;
     QPen pen;
     QGraphicsScene *scene;
