@@ -219,6 +219,36 @@ void MainWindow::resizeEvent(QResizeEvent *event)
     }
 }
 
+/// Takes in a ContourListSet and the indices of the ContourLists to compare.
+/// Re-orders the right-side ContourList contours to match with the left-side.
+void MainWindow::matchContourLists(ContourListSet &cls, int left, int right)
+{
+    ContourList left_list = cls.at(left);
+    ContourList right_list = cls.at(right);
+    ContourList right_matched(right_list.size());
+    for (int j=0; j<left_list.size(); j++)
+    {
+        std::vector<cv::Point> left_ctr = left_list.at(j);
+        cv::Rect left_rect = cv::boundingRect(left_ctr);
+        int match = -1;
+        double best_intersect = 0;
+        Contour right_match;
+        for (int k=0; k<right_list.size(); k++)
+        {
+            Contour right_ctr = right_list.at(k);
+            cv::Rect right_rect = cv::boundingRect(right_ctr);
+            double area = (left_rect & right_rect).area();
+            if (area > best_intersect)
+            {
+                best_intersect = area;
+                right_match = right_ctr;
+            }
+        }
+        right_matched[j] = right_match;
+    }
+    cls[right] = right_matched;
+}
+
 void MainWindow::on_action_Open_triggered()
 {       
     // load a video
@@ -243,16 +273,10 @@ void MainWindow::on_action_Open_triggered()
 
     /// Find contours
     int thresh = 100;
-    int max_thresh = 255;
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
-    //std::vector<std::vector<std::vector<cv::Point>>> frame_contours;
-    //std::vector<std::vector<cv::Vec<int, 4>>> frame_hierarchies;
-    std::vector<std::vector<cv::Point> > frame_contour_centroids(frame_count);
-    std::vector<std::vector<cv::Point> > tracked_contours;
     std::vector<cv::Vec4i> hierarchy;
-    int least_contours = 200;
     for (int i=0; i<frame_count; i++)
     {
         cap.set(CV_CAP_PROP_POS_FRAMES, i);
@@ -268,50 +292,39 @@ void MainWindow::on_action_Open_triggered()
         /// Find contours
         ContourList initial_contours;
         cv::findContours(canny_output, initial_contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-        ContourList contours;
-        contours.resize(initial_contours.size());
-        for(int k=0; k < initial_contours.size(); k++)
-        {
-            cv::approxPolyDP(initial_contours.at(k), contours[k], 3, true);
-            //cv::convexHull(initial_contours.at(k), contours[k], false, true);
-        }
-
         frame_contours.push_back(initial_contours);
         frame_hierarchies.push_back(hierarchy);
     }
-    qDebug() << "done contouring. least count: " << least_contours;
 
     /// Instead of comparing the first with all the next,
     /// Only compare the first with the second, the second with the third, etc.
     /// Better matches.
-    //std::vector<std::tuple<int, double>> ctr_matches;
+    matchContourLists(frame_contours, 0, 1);
     ContourList left_ctr_set = frame_contours.at(0);
     ContourList right_ctr_set = frame_contours.at(1);
-    ContourList right_ctr_match_set(right_ctr_set.size());
-    for (int j=0; j<left_ctr_set.size(); j++)
-    {
-        std::vector<cv::Point> left_ctr = left_ctr_set.at(j);
-        cv::Rect left_rect = cv::boundingRect(left_ctr);
-        int match = -1;
-        double best_intersect = 0;
-        Contour right_ctr_match;
-        for (int k=0; k<right_ctr_set.size(); k++)
-        {
-            Contour right_ctr = right_ctr_set.at(k);
-            cv::Rect right_rect = cv::boundingRect(right_ctr);
-            double area = (left_rect & right_rect).area();
-            if (area > best_intersect)
-            {
-                best_intersect = area;
-                //match = k;
-                right_ctr_match = right_ctr;
-            }
-        }
-        right_ctr_match_set[j] = right_ctr_match;
-        //ctr_matches.push_back(std::tuple<int, double>(match, best_intersect));
-    }
-    frame_contours[1] = right_ctr_match_set;
+//    ContourList right_ctr_match_set(right_ctr_set.size());
+//    for (int j=0; j<left_ctr_set.size(); j++)
+//    {
+//        std::vector<cv::Point> left_ctr = left_ctr_set.at(j);
+//        cv::Rect left_rect = cv::boundingRect(left_ctr);
+//        int match = -1;
+//        double best_intersect = 0;
+//        Contour right_ctr_match;
+//        for (int k=0; k<right_ctr_set.size(); k++)
+//        {
+//            Contour right_ctr = right_ctr_set.at(k);
+//            cv::Rect right_rect = cv::boundingRect(right_ctr);
+//            double area = (left_rect & right_rect).area();
+//            if (area > best_intersect)
+//            {
+//                best_intersect = area;
+//                //match = k;
+//                right_ctr_match = right_ctr;
+//            }
+//        }
+//        right_ctr_match_set[j] = right_ctr_match;
+//    }
+//    frame_contours[1] = right_ctr_match_set;
 
 
     int max_size;
@@ -331,14 +344,6 @@ void MainWindow::on_action_Open_triggered()
     }
     contour_colors.push_back(left_colors);
     contour_colors.push_back(right_colors);
-    //std::sort(ctr_matches.begin(), ctr_matches.end(), [](std::tuple<int, double> const& n1, std::tuple<int, double> const& n2) {return std::get<1>(n1) > std::get<1>(n2);});
-
-
-    //while (ctr_matches.size() > min_size)
-    //{
-    //    ctr_matches.pop_back();
-    //}
-    //std::swap(ctr_matches[0], ctr_matches.back());
 
     qDebug() << "matches.";
 

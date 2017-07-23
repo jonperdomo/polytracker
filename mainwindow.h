@@ -78,6 +78,7 @@ private:
     void removeAllSceneLines();
     void drawCrosshair(int x, int y);
     void savePointsToCSV(QString filename);
+    void matchContourLists(ContourListSet &cls, int left, int right);
 };
 
 #endif // MAINWINDOW_H
