@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->pointTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->pointEditorPanel->hide();
     ui->frameSlider->setEnabled(false);
+    ui->frameSpinBox->setEnabled(false);
 
     // Set window icon
     QPixmap logo = QPixmap(":/Logo/northern-red.png");
@@ -156,28 +157,16 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
 
-    ///------------------------------------------------------------
-    ContourList contours = frame_contours.at(frame_index);
-    Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-
     /// Draw contours
     cv::RNG rng(12345);
-    if (frame_index > 1)
+    ContourList contours = frame_contours.at(frame_index);
+    Hierarchy hierarchy = frame_hierarchies.at(frame_index);
+    std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
+    for (int i=0; i< contours.size(); i++)
     {
-        for (int i = 0; i< contours.size(); i++)
-        {
-            cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-            cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
-        }
-    } else {
-        std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
-        for (int i=0; i< contours.size(); i++)
-        {
-            cv::Scalar color = color_set.at(i);
-            cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
-        }
+        cv::Scalar color = color_set.at(i);
+        cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
     }
-    ///------------------------------------------------------------
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -230,8 +219,7 @@ void MainWindow::matchContourLists(ContourListSet &cls, int left, int right)
     {
         std::vector<cv::Point> left_ctr = left_list.at(j);
         cv::Rect left_rect = cv::boundingRect(left_ctr);
-        int match = -1;
-        double best_intersect = 0;
+        double best_intersect = -1;
         Contour right_match;
         for (int k=0; k<right_list.size(); k++)
         {
@@ -251,32 +239,25 @@ void MainWindow::matchContourLists(ContourListSet &cls, int left, int right)
 
 void MainWindow::on_action_Open_triggered()
 {       
-    // load a video
-    QString result = QFileDialog::getOpenFileName(this, tr("Open Video File 2"), "/home", tr("Video Files (*.avi)"));
+    /// Load a video
+    QString result = QFileDialog::getOpenFileName(this, tr("Select a Video File"), "/home", tr("Video Files (*.avi)"));
     video_filepath = result.toUtf8().constData();
     QString video_filename = QString::fromStdString(video_filepath.substr(video_filepath.find_last_of("/\\") + 1));
-    qDebug() << "filename: " << video_filename;
-
     cap = cv::VideoCapture(video_filepath);
-    int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    qDebug() << "opened video: " << video_filename;
 
-    // update ui elements
-    ui->frameSlider->setEnabled(true);
+    /// Enable video control elements, update elements with video information.
+    int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
     ui->pointEditorPanel->show();
     ui->pointTable->setRowCount(frame_count);
-    ui->frameSlider->setRange(1, frame_count);
-    ui->frameSpinBox->setRange(1, frame_count);
     ui->videoComboBox->addItem(video_filename);
-
-    /// --------------------------------------------------------------------------------------------
-
 
     /// Find contours
     int thresh = 100;
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
-    std::vector<cv::Vec4i> hierarchy;
+    int max_size = 0;
     for (int i=0; i<frame_count; i++)
     {
         cap.set(CV_CAP_PROP_POS_FRAMES, i);
@@ -290,65 +271,37 @@ void MainWindow::on_action_Open_triggered()
         cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
 
         /// Find contours
+        std::vector<cv::Vec4i> hierarchy;
         ContourList initial_contours;
         cv::findContours(canny_output, initial_contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
         frame_contours.push_back(initial_contours);
         frame_hierarchies.push_back(hierarchy);
+        if (initial_contours.size() > max_size)
+        {
+            max_size = initial_contours.size();
+        }
     }
+    qDebug() << "Completed finding contours.";
 
     /// Instead of comparing the first with all the next,
     /// Only compare the first with the second, the second with the third, etc.
     /// Better matches.
     matchContourLists(frame_contours, 0, 1);
-    ContourList left_ctr_set = frame_contours.at(0);
-    ContourList right_ctr_set = frame_contours.at(1);
-//    ContourList right_ctr_match_set(right_ctr_set.size());
-//    for (int j=0; j<left_ctr_set.size(); j++)
+//    for (int i=0; i<frame_count-1; i++)
 //    {
-//        std::vector<cv::Point> left_ctr = left_ctr_set.at(j);
-//        cv::Rect left_rect = cv::boundingRect(left_ctr);
-//        int match = -1;
-//        double best_intersect = 0;
-//        Contour right_ctr_match;
-//        for (int k=0; k<right_ctr_set.size(); k++)
-//        {
-//            Contour right_ctr = right_ctr_set.at(k);
-//            cv::Rect right_rect = cv::boundingRect(right_ctr);
-//            double area = (left_rect & right_rect).area();
-//            if (area > best_intersect)
-//            {
-//                best_intersect = area;
-//                //match = k;
-//                right_ctr_match = right_ctr;
-//            }
-//        }
-//        right_ctr_match_set[j] = right_ctr_match;
+//        matchContourLists(frame_contours, i, i+1);
 //    }
-//    frame_contours[1] = right_ctr_match_set;
 
-
-    int max_size;
-    if (left_ctr_set.size() > right_ctr_set.size())
+    contour_colors.resize(frame_count);
+    for (int i=0; i<max_size; i++)
     {
-        max_size = left_ctr_set.size();
-    } else {
-        max_size = right_ctr_set.size();
+        cv::Scalar match_color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        for (int j=0; j<frame_count; j++)
+        {
+            contour_colors[j].push_back(match_color);
+        }
     }
-    std::vector<cv::Scalar> left_colors;
-    std::vector<cv::Scalar> right_colors;
-    for (int i=0; i< max_size; i++)
-    {
-        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-        left_colors.push_back(color);
-        right_colors.push_back(color);
-    }
-    contour_colors.push_back(left_colors);
-    contour_colors.push_back(right_colors);
-
-    qDebug() << "matches.";
-
-    /// --------------------------------------------------------------------------------------------
-
+    qDebug() << "Completed matching contours.";
 
     /// show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
@@ -367,7 +320,13 @@ void MainWindow::on_action_Open_triggered()
     ui->insetView->centerOn(bounds.center());
 
     /// Set up chart
-    chart->axisX()->setRange(1, frame_count);    
+    chart->axisX()->setRange(1, frame_count);
+
+    /// Enable frame sliders
+    ui->frameSlider->setEnabled(true);
+    ui->frameSlider->setRange(1, frame_count);
+    ui->frameSpinBox->setEnabled(true);
+    ui->frameSpinBox->setRange(1, frame_count);
 }
 
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
