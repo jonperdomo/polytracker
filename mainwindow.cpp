@@ -161,12 +161,19 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cv::RNG rng(12345);
     ContourList contours = frame_contours.at(frame_index);
     Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-    std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
-    for (int i=0; i< contours.size(); i++)
+    /// Draw contours
+    qDebug() << "contour count: " << contours.size();
+    for (int i = 0; i< contours.size(); i++)
     {
-        cv::Scalar color = color_set.at(i);
+        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
         cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
     }
+//    std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
+//    for (int i=0; i< contours.size(); i++)
+//    {
+//        cv::Scalar color = color_set.at(i);
+//        cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+//    }
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -210,31 +217,53 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 /// Takes in a ContourListSet and the indices of the ContourLists to compare.
 /// Re-orders the right-side ContourList contours to match with the left-side.
+///
+/// TODO: In addition to an intersection comparison, have a mode for using MatchShapes() instead
 void MainWindow::matchContourLists(ContourListSet &cls, int left, int right)
 {
-    ContourList left_list = cls.at(left);
-    ContourList right_list = cls.at(right);
-    ContourList right_matched(right_list.size());
-    for (int j=0; j<left_list.size(); j++)
+    /// 1) Initialize a frame contour list set equal to the number of frames (matched_set)
+    /// This will end up being a copy of the original set, with all lists being equal to the size of the smallest contour list (list_size)
+    /// 2) Obtain a ContourList AL
+    /// 3) Obtain a Contour AC
+    /// 4) Obtain the next ContourList BL
+    /// 5) Obtain the best match BC to AC
+    /// 6) Save the intersection area and index for BC to a vector
+    /// 7) Sort the vector containing all matches for AL in BL (index, intersection area) in descending order by area
+    /// Also find the new order for AL.
+    /// 8) Check for duplicate indices in the vector (See: Duplicate check)
+    /// 9) Push the first list_size matches to a new ContourList for BL and AL
+    /// 10) Push the new ContourLists for the frames to the ContourListSet matched_set
+    /// 11) Repeat for all frames
+    /// 12) Return the final ContourListSet with matched contours
+    ///
+    /// Duplicate check:
+    /// 1) From the match vector, find any duplicate indices
+    ///
+    /// Find smaller contour list
+    /// Create an array of zeros size of the contour list
+    /// And an array for holding the indices of the matches
+    /// Find the area of each contour compared to one on the larger list.
+    /// If larger, replace the index value in the zero vector.
+    /// And save the index of the contour in another vector.
+    /// Once complete, delete all the unused/unmatched indices from the larger contour list.
+    /// There should be no duplicates, but verify this.
+
+    ContourList first_list = cls.at(0);
+    std::vector<cv::Moments> mu(first_list.size());
+    for (int i=0; i<first_list.size(); i++)
     {
-        std::vector<cv::Point> left_ctr = left_list.at(j);
-        cv::Rect left_rect = cv::boundingRect(left_ctr);
-        double best_intersect = -1;
-        Contour right_match;
-        for (int k=0; k<right_list.size(); k++)
+        if (cv::isContourConvex(first_list[i]))
         {
-            Contour right_ctr = right_list.at(k);
-            cv::Rect right_rect = cv::boundingRect(right_ctr);
-            double area = (left_rect & right_rect).area();
-            if (area > best_intersect)
-            {
-                best_intersect = area;
-                right_match = right_ctr;
-            }
+            mu[i] = cv::moments(first_list[i], false);
         }
-        right_matched[j] = right_match;
     }
-    cls[right] = right_matched;
+
+    std::vector<cv::Point2f> mc(first_list.size());
+    for (int i=0; i<first_list.size(); i++)
+    {
+        mc[i] = cv::Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
+    }
+    qDebug() << "hanging by a moment";
 }
 
 void MainWindow::on_action_Open_triggered()
@@ -258,6 +287,9 @@ void MainWindow::on_action_Open_triggered()
     cv::Mat src_gray;
     cv::Mat canny_output;
     int max_size = 0;
+    std::vector<std::vector<cv::Point>> frame_centroids(frame_count);
+    ContourListSet initial_contours;
+    HierarchyListSet initial_hierarchies;
     for (int i=0; i<frame_count; i++)
     {
         cap.set(CV_CAP_PROP_POS_FRAMES, i);
@@ -272,36 +304,66 @@ void MainWindow::on_action_Open_triggered()
 
         /// Find contours
         std::vector<cv::Vec4i> hierarchy;
-        ContourList initial_contours;
-        cv::findContours(canny_output, initial_contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-        frame_contours.push_back(initial_contours);
-        frame_hierarchies.push_back(hierarchy);
-        if (initial_contours.size() > max_size)
+        ContourList contours;
+        cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        initial_contours.push_back(contours);
+        initial_hierarchies.push_back(hierarchy);
+
+        /// Find mean of each contour
+        for(int j=0; j<contours.size(); j++)
         {
-            max_size = initial_contours.size();
+            std::vector<cv::Point> points;
+            points = contours.at(j);
+            cv::Point zero(0.0f, 0.0f);
+            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
+            cv::Point mean_point = (sum * (1.0f / points.size()));
+            //qDebug() << "center: " << mean_point.x << ", " << mean_point.y;
+            frame_centroids[i].push_back(mean_point);
         }
     }
-    qDebug() << "Completed finding contours.";
+    qDebug() << "Completed finding contour centroids.";
 
-    /// Instead of comparing the first with all the next,
-    /// Only compare the first with the second, the second with the third, etc.
-    /// Better matches.
-    matchContourLists(frame_contours, 0, 1);
-//    for (int i=0; i<frame_count-1; i++)
-//    {
-//        matchContourLists(frame_contours, i, i+1);
-//    }
-
-    contour_colors.resize(frame_count);
-    for (int i=0; i<max_size; i++)
+    /// Match all contours
+    frame_contours.push_back(initial_contours.at(0));
+    frame_hierarchies.push_back(initial_hierarchies.at(0));
+    for (int i=0; i<frame_count-1; i++)
     {
-        cv::Scalar match_color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-        for (int j=0; j<frame_count; j++)
+        std::vector<cv::Point> left = frame_centroids.at(i);
+        std::vector<cv::Point> right = frame_centroids.at(i+1);
+
+        /// Find the distances between centroids of each contour.
+        std::vector<std::tuple<double, int>> distance_and_index;
+        for (int j=0; j<left.size(); j++)
         {
-            contour_colors[j].push_back(match_color);
+            cv::Point left_point = left.at(j);
+            int best_distance = current_frame.cols;
+            int best_right_index = -1;
+            for (int k=0; k<right.size(); k++)
+            {
+                cv::Point right_point = right.at(k);
+                double dist = cv::norm(left_point-right_point);
+
+                if (dist < best_distance)
+                {
+                    best_distance = dist;
+                    best_right_index = k;
+                }
+            }
+            distance_and_index.push_back(std::tuple<double, int>(best_distance, best_right_index));
         }
+//        std::sort(distance_and_index.begin(), distance_and_index.end(), [](std::tuple<double, int> const& n1, std::tuple<double, int> const& n2) {return std::get<0>(n1) < std::get<0>(n2);});
+
+        /// Push back the matches
+        ContourList matched_contours;
+        Hierarchy matched_hierarchies;
+        for (int j=0; j<distance_and_index.size(); j++)
+        {
+            matched_contours.push_back(initial_contours[i+1][std::get<1>(distance_and_index.at(j))]);
+            matched_hierarchies.push_back(initial_hierarchies[i+1][std::get<1>(distance_and_index.at(j))]);
+        }
+        frame_contours.push_back(matched_contours);
+        frame_hierarchies.push_back(matched_hierarchies);
     }
-    qDebug() << "Completed matching contours.";
 
     /// show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
