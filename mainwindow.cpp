@@ -17,7 +17,6 @@ MainWindow::MainWindow(QWidget *parent) :
     //setWindowIcon(QIcon(logo));
 
     // Set up scene
-    pen = QPen(QColor(50,205,50, 100), 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
@@ -75,12 +74,12 @@ void MainWindow::onPixelClicked(QPointF &pos)
         int y = static_cast<int>(pos.y());
         if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
-            int row = ui->frameSlider->value()-1;
-//            QString text = QString("%1, %2").arg(x).arg(y);
-//            ui->contourTable->setItem(row, 0, new QTableWidgetItem(text));
-            removeAllSceneEllipses();
-            removeAllSceneLines();
-            drawCrosshair(x, y);
+//            int row = ui->frameSlider->value()-1;
+////            QString text = QString("%1, %2").arg(x).arg(y);
+////            ui->contourTable->setItem(row, 0, new QTableWidgetItem(text));
+//            removeAllSceneEllipses();
+//            removeAllSceneLines();
+//            drawCrosshair(x, y);
 
             // Update inset
             ui->insetView->centerOn(x,y);
@@ -112,8 +111,9 @@ void MainWindow::removeAllSceneLines()
     }
 }
 
-void MainWindow::drawCrosshair(int x, int y)
+void MainWindow::drawCrosshair(int x, int y, QColor color)
 {
+    QPen pen = QPen(color, 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
     scene->addEllipse( x-5, y-5, 10, 10, pen);
     scene->addLine(x-4, y, x+4, y, pen);
     scene->addLine(x, y-4, x, y+4, pen);
@@ -153,6 +153,11 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
 {
     if (frame_contours.size()>0)
     {
+        /// Remove the previous crosshairs
+        removeAllSceneEllipses();
+        removeAllSceneLines();
+
+        /// Set the frame
         cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
         cap.read(current_frame);
 
@@ -160,6 +165,7 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
         cv::RNG rng(12345);
         ContourList contours = frame_contours.at(frame_index);
         Hierarchy hierarchy = frame_hierarchies.at(frame_index);
+        std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
         for (int i=0; i<contour_colors.size(); i++)
         {
             cv::Scalar color = contour_colors.at(i);
@@ -169,6 +175,9 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
             } else {
                 cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
             }
+            cv::Point centroid = centroids.at(i);
+            drawCrosshair(centroid.x, centroid.y);
+            //drawCrosshair(centroid.x, centroid.y, QColor(color.val[0], color.val[1], color.val[2], 255));
         }
 
         /// Show in a window
@@ -178,10 +187,6 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
 
         /// Show in view, scaled to view bounds & keeping aspect ratio
         image_item->setPixmap(pixmap);
-
-        /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
-        removeAllSceneEllipses();
-        removeAllSceneLines();
     }
 }
 
@@ -197,21 +202,26 @@ cv::Point MainWindow::getCenterOfMass(const Contour contour)
 {
     cv::Moments mu = cv::moments(contour);
     cv::Point centroid = cv::Point(mu.m10/mu.m00 , mu.m01/mu.m00);
-    qDebug() << "convex: " << cv::isContourConvex(contour);
-    qDebug() << "x: " << centroid.x;
-    qDebug() << "y: " << centroid.y;
-    return getMeanPoint(contour);
+    if (centroid.x < 0 || centroid.y < 0)
+    {
+        return getMeanPoint(contour);
+    } else {
+        return centroid;
+    }
 }
 
 void MainWindow::updateAllContours()
 {
     /// Clear current contours
+    frame_centroids.clear();
     frame_contours.clear();
     frame_hierarchies.clear();
     contour_colors.clear();
 
+
     /// Find contours
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    frame_centroids.resize(frame_count);
     frame_contours.resize(frame_count);
     frame_hierarchies.resize(frame_count);
 
@@ -220,7 +230,6 @@ void MainWindow::updateAllContours()
     cv::Mat src_gray;
     cv::Mat canny_output;
     int max_size = 0;
-    std::vector<std::vector<cv::Point>> frame_centroids(frame_count);
     ContourListSet initial_contours;
     HierarchyListSet initial_hierarchies;
     for (int i=0; i<frame_count; i++)
@@ -250,8 +259,7 @@ void MainWindow::updateAllContours()
         for(int j=0; j<(int)contours.size(); j++)
         {
             Contour contour = contours.at(j);
-            qDebug() << "contour " << j;
-            frame_centroids[i].push_back(getCenterOfMass(contour));
+            frame_centroids[i].push_back(getMeanPoint(contour));
         }
     }
     contour_colors.resize(initial_contours.at(0).size());
@@ -299,7 +307,8 @@ void MainWindow::updateAllContours()
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     int frame_index = arg1-1;
-    drawAllContours(frame_index);
+    int contour_index = ui->contourTable->currentRow();
+    drawAllContours(frame_index, contour_index);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -368,12 +377,9 @@ void MainWindow::on_contourTable_itemSelectionChanged()
 
 void MainWindow::on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
 {
+    /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     drawAllContours(frame_index, row);
-//    qDebug() << "cell change.";
-//    /// Update the frame based on the row selected
-//    QTableWidgetItem* item = ui->contourTable->item(row, column);
-////    ui->frameSpinBox->setValue(row+1);
 }
 
 void MainWindow::on_deleteContourButton_clicked()
