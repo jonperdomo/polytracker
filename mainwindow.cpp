@@ -160,7 +160,6 @@ void MainWindow::updateContours()
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
     frame_contours.resize(frame_count);
     frame_hierarchies.resize(frame_count);
-    contour_colors.resize(frame_count);
 
     int thresh = 100;
     cv::RNG rng(12345);
@@ -204,7 +203,8 @@ void MainWindow::updateContours()
             frame_centroids[i].push_back(mean_point);
         }
     }
-    qDebug() << "Completed finding contour centroids.";
+    contour_colors.resize(initial_contours.at(0).size());
+    qDebug() << "Completed finding contours";
 
     /// Match first contour
     frame_contours.at(0).push_back(initial_contours.at(0).at(0));
@@ -242,15 +242,14 @@ void MainWindow::updateContours()
     double g = color.val[1];
     double b = color.val[2];
     ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(r,g,b,255));
+    qDebug() << "Found" << contour_colors.size() << "contours";
 }
 
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
-    qDebug() << "frame update.";
     int frame_index = arg1-1;
     if (frame_contours.size()>0)
     {
-    qDebug() << "boom: " << frame_contours.size();
     cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
     cap.read(current_frame);
 
@@ -259,7 +258,6 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     ContourList contours = frame_contours.at(frame_index);
     Hierarchy hierarchy = frame_hierarchies.at(frame_index);
     cv::Scalar color = contour_colors.at(0);
-    //    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
     cv::drawContours(current_frame, contours, 0, color, 1, 8, hierarchy, 0, cv::Point());
 
     /// Show in a window
@@ -391,7 +389,7 @@ void MainWindow::on_deleteContourButton_clicked()
 
 void MainWindow::on_findContoursButton_clicked()
 {
-    qDebug() << "finded.";
+    /// TODO: Check if contours have been updated (deleted) before doing this.
     updateContours();
     on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
 }
