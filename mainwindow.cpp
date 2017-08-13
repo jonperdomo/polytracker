@@ -149,7 +149,61 @@ void MainWindow::savePointsToCSV(QString filename)
     qDebug() << "saved all points: " << filename;
 }
 
-void MainWindow::updateContours()
+void MainWindow::drawAllContours(int frame_index, int contour_index)
+{
+    if (frame_contours.size()>0)
+    {
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+        cap.read(current_frame);
+
+        /// Draw contours
+        cv::RNG rng(12345);
+        ContourList contours = frame_contours.at(frame_index);
+        Hierarchy hierarchy = frame_hierarchies.at(frame_index);
+        for (int i=0; i<contour_colors.size(); i++)
+        {
+            cv::Scalar color = contour_colors.at(i);
+            if (i==contour_index)
+            {
+                cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+            } else {
+                cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+            }
+        }
+
+        /// Show in a window
+        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+        QPixmap pixmap;
+        pixmap = QPixmap::fromImage(img);
+
+        /// Show in view, scaled to view bounds & keeping aspect ratio
+        image_item->setPixmap(pixmap);
+
+        /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
+        removeAllSceneEllipses();
+        removeAllSceneLines();
+    }
+}
+
+cv::Point MainWindow::getMeanPoint(const Contour contour)
+{
+    cv::Point zero(0.0f, 0.0f);
+    cv::Point sum  = std::accumulate(contour.begin(), contour.end(), zero);
+    cv::Point mean_point = (sum * (1.0f / contour.size()));
+    return mean_point;
+}
+
+cv::Point MainWindow::getCenterOfMass(const Contour contour)
+{
+    cv::Moments mu = cv::moments(contour);
+    cv::Point centroid = cv::Point(mu.m10/mu.m00 , mu.m01/mu.m00);
+    qDebug() << "convex: " << cv::isContourConvex(contour);
+    qDebug() << "x: " << centroid.x;
+    qDebug() << "y: " << centroid.y;
+    return getMeanPoint(contour);
+}
+
+void MainWindow::updateAllContours()
 {
     /// Clear current contours
     frame_contours.clear();
@@ -195,12 +249,9 @@ void MainWindow::updateContours()
         /// Find centroid (mean) of each contour
         for(int j=0; j<(int)contours.size(); j++)
         {
-            std::vector<cv::Point> points;
-            points = contours.at(j);
-            cv::Point zero(0.0f, 0.0f);
-            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
-            cv::Point mean_point = (sum * (1.0f / points.size()));
-            frame_centroids[i].push_back(mean_point);
+            Contour contour = contours.at(j);
+            qDebug() << "contour " << j;
+            frame_centroids[i].push_back(getCenterOfMass(contour));
         }
     }
     contour_colors.resize(initial_contours.at(0).size());
@@ -248,44 +299,7 @@ void MainWindow::updateContours()
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     int frame_index = arg1-1;
-    if (frame_contours.size()>0)
-    {
-    cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
-    cap.read(current_frame);
-
-    /// Draw contours
-    cv::RNG rng(12345);
-    ContourList contours = frame_contours.at(frame_index);
-    Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-    for (int i=0; i<contour_colors.size(); i++)
-    {
-        cv::Scalar color = contour_colors.at(i);
-        cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
-    }
-
-    /// Show in a window
-    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-    QPixmap pixmap;
-    pixmap = QPixmap::fromImage(img);
-
-    /// Show in view, scaled to view bounds & keeping aspect ratio
-    image_item->setPixmap(pixmap);
-
-    /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
-    removeAllSceneEllipses();
-    removeAllSceneLines();
-//    QTableWidgetItem* item = ui->contourTable->item(frame_index, 0);
-//    if (item)
-//    {
-//        QStringList coordinate = item->text().split(",");
-//        int x = (coordinate[0]).toInt();
-//        int y = (coordinate[1]).toInt();
-//        drawCrosshair(x, y);
-
-//        /// Update inset
-//        ui->insetView->centerOn(x,y);
-//    }
-    }
+    drawAllContours(frame_index);
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -318,7 +332,7 @@ void MainWindow::on_action_Open_triggered()
     ui->videoComboBox->addItem(video_filename);
 
     /// Get contours
-    updateContours();
+    updateAllContours();
 
     /// show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
@@ -354,20 +368,12 @@ void MainWindow::on_contourTable_itemSelectionChanged()
 
 void MainWindow::on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
 {
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    drawAllContours(frame_index, row);
 //    qDebug() << "cell change.";
 //    /// Update the frame based on the row selected
 //    QTableWidgetItem* item = ui->contourTable->item(row, column);
 ////    ui->frameSpinBox->setValue(row+1);
-
-//    /// Enable/disable the button for deleting points
-//    if (item)
-//    {
-//        ui->deleteContourButton->setEnabled(true);
-//    }
-//    else
-//    {
-//        ui->deleteContourButton->setEnabled(false);
-//    }
 }
 
 void MainWindow::on_deleteContourButton_clicked()
@@ -394,6 +400,6 @@ void MainWindow::on_deleteContourButton_clicked()
 void MainWindow::on_findContoursButton_clicked()
 {
     /// TODO: Check if contours have been updated (deleted) before doing this.
-    updateContours();
+    updateAllContours();
     on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
 }

@@ -80,7 +80,10 @@ private:
     void removeAllSceneLines();
     void drawCrosshair(int x, int y);
     void savePointsToCSV(QString filename);
-    void updateContours();
+    void updateAllContours();
+    void drawAllContours(int frame_index, int contour_index=-1);
+    cv::Point getMeanPoint(const Contour contour);
+    cv::Point getCenterOfMass(const Contour contour);
 };
 
 #endif // MAINWINDOW_H
