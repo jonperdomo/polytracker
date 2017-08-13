@@ -206,42 +206,42 @@ void MainWindow::updateContours()
     contour_colors.resize(initial_contours.at(0).size());
     qDebug() << "Completed finding contours";
 
-    /// Match first contour
-    frame_contours.at(0).push_back(initial_contours.at(0).at(0));
-    frame_hierarchies.at(0).push_back(initial_hierarchies.at(0).at(0));
-    std::vector<cv::Point> first_set = frame_centroids.at(0);
-    cv::Point first_point = first_set.at(0);
-    for (int i=1; i<(int)frame_count; i++)
+    for (int c=0; c<contour_colors.size(); c++)
     {
-        std::vector<cv::Point> point_set = frame_centroids.at(i);
-        int best_distance = current_frame.cols;
-        int index = -1;
-        for (int k=0; k<(int)point_set.size(); k++)
+        /// Match first contour
+        frame_contours.at(0).push_back(initial_contours.at(0).at(c));
+        frame_hierarchies.at(0).push_back(initial_hierarchies.at(0).at(c));
+        std::vector<cv::Point> first_set = frame_centroids.at(0);
+        cv::Point first_point = first_set.at(c);
+        for (int i=1; i<(int)frame_count; i++)
         {
-            cv::Point point = point_set.at(k);
-            double dist = cv::norm(first_point-point);
-
-            if (dist < best_distance)
+            std::vector<cv::Point> point_set = frame_centroids.at(i);
+            int best_distance = current_frame.cols;
+            int index = -1;
+            for (int k=0; k<(int)point_set.size(); k++)
             {
-                best_distance = dist;
-                index = k;
-            }
-        }
-        first_point = point_set.at(index);
-        frame_contours.at(i).push_back(initial_contours.at(i).at(index));
-        frame_hierarchies.at(i).push_back(initial_hierarchies.at(i).at(index));
-    }
-    /// Set the color for the contour
-    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-    contour_colors[0] = (color);
+                cv::Point point = point_set.at(k);
+                double dist = cv::norm(first_point-point);
 
-    /// Add first contour to the table
-    ui->contourTable->insertRow(ui->contourTable->rowCount());
-    ui->contourTable->setItem(ui->contourTable->rowCount()-1, 0, new QTableWidgetItem());
-    double r = color.val[0];
-    double g = color.val[1];
-    double b = color.val[2];
-    ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(r,g,b,255));
+                if (dist < best_distance)
+                {
+                    best_distance = dist;
+                    index = k;
+                }
+            }
+            first_point = point_set.at(index);
+            frame_contours.at(i).push_back(initial_contours.at(i).at(index));
+            frame_hierarchies.at(i).push_back(initial_hierarchies.at(i).at(index));
+        }
+        /// Set the color for the contour
+        cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+        contour_colors[c] = (color);
+
+        /// Add first contour to the table
+        ui->contourTable->insertRow(ui->contourTable->rowCount());
+        ui->contourTable->setItem(ui->contourTable->rowCount()-1, 0, new QTableWidgetItem());
+        ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
+    }
     qDebug() << "Found" << contour_colors.size() << "contours";
 }
 
@@ -257,8 +257,11 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cv::RNG rng(12345);
     ContourList contours = frame_contours.at(frame_index);
     Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-    cv::Scalar color = contour_colors.at(0);
-    cv::drawContours(current_frame, contours, 0, color, 1, 8, hierarchy, 0, cv::Point());
+    for (int i=0; i<contour_colors.size(); i++)
+    {
+        cv::Scalar color = contour_colors.at(i);
+        cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+    }
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -383,6 +386,7 @@ void MainWindow::on_deleteContourButton_clicked()
             frame_hierarchies[i].erase(frame_hierarchies[i].begin() + row);
         }
         contour_colors.erase(contour_colors.begin() + row);
+        shift++;
     }
     on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
 }
