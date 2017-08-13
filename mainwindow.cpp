@@ -75,8 +75,8 @@ void MainWindow::onPixelClicked(QPointF &pos)
         if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
             int row = ui->frameSlider->value()-1;
-            QString text = QString("%1, %2").arg(x).arg(y);
-            ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
+//            QString text = QString("%1, %2").arg(x).arg(y);
+//            ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
             removeAllSceneEllipses();
             removeAllSceneLines();
             drawCrosshair(x, y);
@@ -148,6 +148,106 @@ void MainWindow::savePointsToCSV(QString filename)
     qDebug() << "saved all points: " << filename;
 }
 
+void MainWindow::updateContours()
+{
+    /// Clear current contours
+    frame_contours.clear();
+    frame_hierarchies.clear();
+    contour_colors.clear();
+
+    /// Find contours
+    int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    int thresh = 100;
+    cv::RNG rng(12345);
+    cv::Mat src_gray;
+    cv::Mat canny_output;
+    int max_size = 0;
+    std::vector<std::vector<cv::Point>> frame_centroids(frame_count);
+    ContourListSet initial_contours;
+    HierarchyListSet initial_hierarchies;
+    for (int i=0; i<frame_count; i++)
+    {
+        cap.set(CV_CAP_PROP_POS_FRAMES, i);
+        cap.read(current_frame);
+
+        /// Convert image to gray and blur it
+        cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+        cv::blur(src_gray, src_gray, cv::Size(3,3));
+
+        /// Detect edges using canny
+        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+
+        /// Find contours
+        std::vector<cv::Vec4i> hierarchy;
+        ContourList contours;
+        cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        initial_contours.push_back(contours);
+        initial_hierarchies.push_back(hierarchy);
+        if ((int)contours.size() > max_size)
+        {
+            max_size = contours.size();
+        }
+
+        /// Find centroid (mean) of each contour
+        for(int j=0; j<(int)contours.size(); j++)
+        {
+            std::vector<cv::Point> points;
+            points = contours.at(j);
+            cv::Point zero(0.0f, 0.0f);
+            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
+            cv::Point mean_point = (sum * (1.0f / points.size()));
+            frame_centroids[i].push_back(mean_point);
+        }
+    }
+    qDebug() << "Completed finding contour centroids.";
+
+    /// Match first contour
+    ContourList fc;
+    fc.push_back(initial_contours.at(0).at(0));
+    frame_contours.push_back(fc);
+    Hierarchy fh;
+    fh.push_back(initial_hierarchies.at(0).at(0));
+    frame_hierarchies.push_back(fh);
+    std::vector<cv::Point> first_set = frame_centroids.at(0);
+    cv::Point first_point = first_set.at(0);
+    for (int i=1; i<(int)frame_count; i++)
+    {
+        std::vector<cv::Point> point_set = frame_centroids.at(i);
+        int best_distance = current_frame.cols;
+        int index = -1;
+        for (int k=0; k<(int)point_set.size(); k++)
+        {
+            cv::Point point = point_set.at(k);
+            double dist = cv::norm(first_point-point);
+
+            if (dist < best_distance)
+            {
+                best_distance = dist;
+                index = k;
+            }
+        }
+        first_point = point_set.at(index);
+        ContourList fcc;
+        fcc.push_back(initial_contours.at(i).at(index));
+        frame_contours.push_back(fcc);
+        Hierarchy fhh;
+        fhh.push_back(initial_hierarchies.at(i).at(index));
+        frame_hierarchies.push_back(fhh);
+    }
+    /// Set the color for the contour
+    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+    contour_colors.push_back(color);
+
+
+    /// Add first contour to the table
+    ui->pointTable->insertRow(ui->pointTable->rowCount());
+    ui->pointTable->setItem(ui->pointTable->rowCount()-1, 0, new QTableWidgetItem());
+    double r = color.val[0];
+    double g = color.val[1];
+    double b = color.val[2];
+    ui->pointTable->item(ui->pointTable->rowCount()-1, 0)->setBackgroundColor(QColor(r,g,b,255));
+}
+
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     qDebug() << "frame update.";
@@ -162,21 +262,9 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     cv::RNG rng(12345);
     ContourList contours = frame_contours.at(frame_index);
     Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-    /// Draw contours
-    qDebug() << "contour count: " << contours.size();
-//    for (int i = 0; i< 30; i++)
-   // for (int i = 0; i< contours.size(); i++)
-   // {
-        //cv::Scalar color = contour_colors.at(i);
-    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
+    cv::Scalar color = contour_colors.at(0);
+    //    cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
     cv::drawContours(current_frame, contours, 0, color, 1, 8, hierarchy, 0, cv::Point());
-   // }
-//    std::vector<cv::Scalar> color_set = contour_colors.at(frame_index);
-//    for (int i=0; i< contours.size(); i++)
-//    {
-//        cv::Scalar color = color_set.at(i);
-//        cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
-//    }
 
     /// Show in a window
     img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
@@ -189,17 +277,17 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
     removeAllSceneLines();
-    QTableWidgetItem* item = ui->pointTable->item(frame_index, 0);
-    if (item)
-    {
-        QStringList coordinate = item->text().split(",");
-        int x = (coordinate[0]).toInt();
-        int y = (coordinate[1]).toInt();
-        drawCrosshair(x, y);
+//    QTableWidgetItem* item = ui->pointTable->item(frame_index, 0);
+//    if (item)
+//    {
+//        QStringList coordinate = item->text().split(",");
+//        int x = (coordinate[0]).toInt();
+//        int y = (coordinate[1]).toInt();
+//        drawCrosshair(x, y);
 
-        /// Update inset
-        ui->insetView->centerOn(x,y);
-    }
+//        /// Update inset
+//        ui->insetView->centerOn(x,y);
+//    }
     }
 }
 
@@ -230,88 +318,11 @@ void MainWindow::on_action_Open_triggered()
     /// Enable video control elements, update elements with video information.
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
     ui->pointEditorPanel->show();
-    ui->pointTable->setRowCount(frame_count);
+//    ui->pointTable->setRowCount(frame_count);
     ui->videoComboBox->addItem(video_filename);
 
-    /// Find contours
-    int thresh = 100;
-    cv::RNG rng(12345);
-    cv::Mat src_gray;
-    cv::Mat canny_output;
-    int max_size = 0;
-    std::vector<std::vector<cv::Point>> frame_centroids(frame_count);
-    ContourListSet initial_contours;
-    HierarchyListSet initial_hierarchies;
-    for (int i=0; i<frame_count; i++)
-    {
-        cap.set(CV_CAP_PROP_POS_FRAMES, i);
-        cap.read(current_frame);
-
-        /// Convert image to gray and blur it
-        cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
-        cv::blur(src_gray, src_gray, cv::Size(3,3));
-
-        /// Detect edges using canny
-        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
-
-        /// Find contours
-        std::vector<cv::Vec4i> hierarchy;
-        ContourList contours;
-        cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-        initial_contours.push_back(contours);
-        initial_hierarchies.push_back(hierarchy);
-        if (contours.size() > max_size)
-        {
-            max_size = contours.size();
-        }
-
-        /// Find mean of each contour
-        for(int j=0; j<contours.size(); j++)
-        {
-            std::vector<cv::Point> points;
-            points = contours.at(j);
-            cv::Point zero(0.0f, 0.0f);
-            cv::Point sum  = std::accumulate(points.begin(), points.end(), zero);
-            cv::Point mean_point = (sum * (1.0f / points.size()));
-            //qDebug() << "center: " << mean_point.x << ", " << mean_point.y;
-            frame_centroids[i].push_back(mean_point);
-        }
-    }
-    qDebug() << "Completed finding contour centroids.";
-
-    /// Match first contour
-    ContourList fc;
-    fc.push_back(initial_contours.at(0).at(0));
-    frame_contours.push_back(fc);
-    Hierarchy fh;
-    fh.push_back(initial_hierarchies.at(0).at(0));
-    frame_hierarchies.push_back(fh);
-    std::vector<cv::Point> first_set = frame_centroids.at(0);
-    cv::Point first_point = first_set.at(0);
-    for (int i=1; i<frame_count; i++)
-    {
-        std::vector<cv::Point> point_set = frame_centroids.at(i);
-        int best_distance = current_frame.cols;
-        int index = -1;
-        for (int k=0; k<point_set.size(); k++)
-        {
-            cv::Point point = point_set.at(k);
-            double dist = cv::norm(first_point-point);
-
-            if (dist < best_distance)
-            {
-                best_distance = dist;
-                index = k;
-            }
-        }
-        first_point = point_set.at(index);
-        ContourList fcc;
-        fcc.push_back(initial_contours.at(i).at(index));
-        frame_contours.push_back(fcc);
-        Hierarchy fhh;
-        fhh.push_back(initial_hierarchies.at(i).at(index));
-        frame_hierarchies.push_back(fhh);
-    }
+    /// Get contours
+    updateContours();
 
     /// show frame zero
     cap.set(CV_CAP_PROP_POS_FRAMES, 0);
@@ -342,18 +353,18 @@ void MainWindow::on_action_Open_triggered()
 void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
 {
     // Update the frame based on the row selected
-    QTableWidgetItem* item = ui->pointTable->item(row, column);
-    ui->frameSpinBox->setValue(row+1);
+//    QTableWidgetItem* item = ui->pointTable->item(row, column);
+//    ui->frameSpinBox->setValue(row+1);
 
-    // Enable/disable the button for deleting points
-    if (item && !item->text().trimmed().isEmpty())
-    {
-        ui->deletePointButton->setEnabled(true);
-    }
-    else
-    {
-        ui->deletePointButton->setEnabled(false);
-    }
+//    // Enable/disable the button for deleting points
+//    if (item && !item->text().trimmed().isEmpty())
+//    {
+//        ui->deletePointButton->setEnabled(true);
+//    }
+//    else
+//    {
+//        ui->deletePointButton->setEnabled(false);
+//    }
 }
 
 void MainWindow::on_saveButton_clicked()
