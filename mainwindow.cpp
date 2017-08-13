@@ -162,22 +162,33 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
         cap.read(current_frame);
 
         /// Draw contours
-        cv::RNG rng(12345);
-        ContourList contours = frame_contours.at(frame_index);
-        Hierarchy hierarchy = frame_hierarchies.at(frame_index);
-        std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
-        for (int i=0; i<contour_colors.size(); i++)
+        if (ui->contoursCheckBox->isChecked())
         {
-            cv::Scalar color = contour_colors.at(i);
-            if (i==contour_index)
+            cv::RNG rng(12345);
+            ContourList contours = frame_contours.at(frame_index);
+            Hierarchy hierarchy = frame_hierarchies.at(frame_index);
+            for (int i=0; i<contour_colors.size(); i++)
             {
-                cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
-            } else {
-                cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+                cv::Scalar color = contour_colors.at(i);
+                if (i==contour_index)
+                {
+                    cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+                } else {
+                    cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+                }
+
             }
-            cv::Point centroid = centroids.at(i);
-            drawCrosshair(centroid.x, centroid.y);
-            //drawCrosshair(centroid.x, centroid.y, QColor(color.val[0], color.val[1], color.val[2], 255));
+        }
+
+        /// Draw centroids
+        if (ui->centroidsCheckBox->isChecked())
+        {
+            std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
+            for (int i=0; i<centroids.size(); i++)
+            {
+                cv::Point centroid = centroids.at(i);
+                drawCrosshair(centroid.x, centroid.y);
+            }
         }
 
         /// Show in a window
@@ -217,7 +228,6 @@ void MainWindow::updateAllContours()
     frame_contours.clear();
     frame_hierarchies.clear();
     contour_colors.clear();
-
 
     /// Find contours
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
