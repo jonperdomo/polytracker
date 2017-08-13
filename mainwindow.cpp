@@ -7,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Set up Qt toolbar window
     ui->setupUi(this);
-    ui->pointTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    ui->contourTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->pointEditorPanel->hide();
     ui->frameSlider->setEnabled(false);
     ui->frameSpinBox->setEnabled(false);
@@ -42,7 +42,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
-    connect(ui->pointTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_pointTable_currentCellChanged(int,int,int,int)));
+    connect(ui->contourTable, SIGNAL(itemSelectionChanged()), this, SLOT(on_contourTable_itemSelectionChanged()));
+    connect(ui->contourTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_contourTable_currentCellChanged(int,int,int,int)));
     show();
 }
 
@@ -76,7 +77,7 @@ void MainWindow::onPixelClicked(QPointF &pos)
         {
             int row = ui->frameSlider->value()-1;
 //            QString text = QString("%1, %2").arg(x).arg(y);
-//            ui->pointTable->setItem(row, 0, new QTableWidgetItem(text));
+//            ui->contourTable->setItem(row, 0, new QTableWidgetItem(text));
             removeAllSceneEllipses();
             removeAllSceneLines();
             drawCrosshair(x, y);
@@ -121,11 +122,11 @@ void MainWindow::drawCrosshair(int x, int y)
 void MainWindow::savePointsToCSV(QString filename)
 {
     QString text_data;
-    int row_count = ui->pointTable->rowCount();
+    int row_count = ui->contourTable->rowCount();
     text_data += QString("x,y,\n");
     for (int row=0; row<row_count; row++)
     {
-        QTableWidgetItem* item = ui->pointTable->item(row, 0);
+        QTableWidgetItem* item = ui->contourTable->item(row, 0);
         if (item)
         {
             QStringList coordinate = item->text().split(",");
@@ -157,6 +158,10 @@ void MainWindow::updateContours()
 
     /// Find contours
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+    frame_contours.resize(frame_count);
+    frame_hierarchies.resize(frame_count);
+    contour_colors.resize(frame_count);
+
     int thresh = 100;
     cv::RNG rng(12345);
     cv::Mat src_gray;
@@ -202,12 +207,8 @@ void MainWindow::updateContours()
     qDebug() << "Completed finding contour centroids.";
 
     /// Match first contour
-    ContourList fc;
-    fc.push_back(initial_contours.at(0).at(0));
-    frame_contours.push_back(fc);
-    Hierarchy fh;
-    fh.push_back(initial_hierarchies.at(0).at(0));
-    frame_hierarchies.push_back(fh);
+    frame_contours.at(0).push_back(initial_contours.at(0).at(0));
+    frame_hierarchies.at(0).push_back(initial_hierarchies.at(0).at(0));
     std::vector<cv::Point> first_set = frame_centroids.at(0);
     cv::Point first_point = first_set.at(0);
     for (int i=1; i<(int)frame_count; i++)
@@ -227,25 +228,20 @@ void MainWindow::updateContours()
             }
         }
         first_point = point_set.at(index);
-        ContourList fcc;
-        fcc.push_back(initial_contours.at(i).at(index));
-        frame_contours.push_back(fcc);
-        Hierarchy fhh;
-        fhh.push_back(initial_hierarchies.at(i).at(index));
-        frame_hierarchies.push_back(fhh);
+        frame_contours.at(i).push_back(initial_contours.at(i).at(index));
+        frame_hierarchies.at(i).push_back(initial_hierarchies.at(i).at(index));
     }
     /// Set the color for the contour
     cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
-    contour_colors.push_back(color);
-
+    contour_colors[0] = (color);
 
     /// Add first contour to the table
-    ui->pointTable->insertRow(ui->pointTable->rowCount());
-    ui->pointTable->setItem(ui->pointTable->rowCount()-1, 0, new QTableWidgetItem());
+    ui->contourTable->insertRow(ui->contourTable->rowCount());
+    ui->contourTable->setItem(ui->contourTable->rowCount()-1, 0, new QTableWidgetItem());
     double r = color.val[0];
     double g = color.val[1];
     double b = color.val[2];
-    ui->pointTable->item(ui->pointTable->rowCount()-1, 0)->setBackgroundColor(QColor(r,g,b,255));
+    ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(r,g,b,255));
 }
 
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
@@ -277,7 +273,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     /// Determine where to place the ellipse based on the frame value and its associated (x,y) position
     removeAllSceneEllipses();
     removeAllSceneLines();
-//    QTableWidgetItem* item = ui->pointTable->item(frame_index, 0);
+//    QTableWidgetItem* item = ui->contourTable->item(frame_index, 0);
 //    if (item)
 //    {
 //        QStringList coordinate = item->text().split(",");
@@ -318,7 +314,6 @@ void MainWindow::on_action_Open_triggered()
     /// Enable video control elements, update elements with video information.
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
     ui->pointEditorPanel->show();
-//    ui->pointTable->setRowCount(frame_count);
     ui->videoComboBox->addItem(video_filename);
 
     /// Get contours
@@ -350,30 +345,53 @@ void MainWindow::on_action_Open_triggered()
     ui->frameSpinBox->setRange(1, frame_count);
 }
 
-void MainWindow::on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
+void MainWindow::on_contourTable_itemSelectionChanged()
 {
-    // Update the frame based on the row selected
-//    QTableWidgetItem* item = ui->pointTable->item(row, column);
-//    ui->frameSpinBox->setValue(row+1);
+    QItemSelectionModel *selection = ui->contourTable->selectionModel();
+    ui->deleteContourButton->setEnabled(selection->hasSelection());
+}
 
-//    // Enable/disable the button for deleting points
-//    if (item && !item->text().trimmed().isEmpty())
+void MainWindow::on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
+{
+//    qDebug() << "cell change.";
+//    /// Update the frame based on the row selected
+//    QTableWidgetItem* item = ui->contourTable->item(row, column);
+////    ui->frameSpinBox->setValue(row+1);
+
+//    /// Enable/disable the button for deleting points
+//    if (item)
 //    {
-//        ui->deletePointButton->setEnabled(true);
+//        ui->deleteContourButton->setEnabled(true);
 //    }
 //    else
 //    {
-//        ui->deletePointButton->setEnabled(false);
+//        ui->deleteContourButton->setEnabled(false);
 //    }
 }
 
-void MainWindow::on_saveButton_clicked()
+void MainWindow::on_deleteContourButton_clicked()
 {
-    QString filename = QFileDialog::getSaveFileName(this,
-        tr("Save pixel positions"), "",
-        tr("CSV (*.csv);;All Files (*)"));
-    if (!filename.trimmed().isEmpty())
+    QItemSelectionModel *selection = ui->contourTable->selectionModel();
+    int row;
+    int shift = 0;
+    foreach (QModelIndex index, selection->selectedRows())
     {
-        savePointsToCSV(filename);
+        row = index.row() - shift;
+        ui->contourTable->removeRow(row);
+        /// Erase the contour in each frame
+        for (int i=0; i<frame_contours.size(); i++)
+        {
+            frame_contours[i].erase(frame_contours[i].begin() + row);
+            frame_hierarchies[i].erase(frame_hierarchies[i].begin() + row);
+        }
+        contour_colors.erase(contour_colors.begin() + row);
     }
+    on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
+}
+
+void MainWindow::on_findContoursButton_clicked()
+{
+    qDebug() << "finded.";
+    updateContours();
+    on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
 }

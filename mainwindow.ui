@@ -63,7 +63,7 @@
         <widget class="QComboBox" name="videoComboBox"/>
        </item>
        <item>
-        <widget class="QTableWidget" name="pointTable">
+        <widget class="QTableWidget" name="contourTable">
          <property name="horizontalScrollBarPolicy">
           <enum>Qt::ScrollBarAlwaysOff</enum>
          </property>
@@ -89,22 +89,22 @@
        <item>
         <layout class="QHBoxLayout" name="pointButtonLayout">
          <item>
-          <widget class="QPushButton" name="deletePointButton">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Delete point (s)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="saveButton">
+          <widget class="QPushButton" name="findContoursButton">
            <property name="enabled">
             <bool>true</bool>
            </property>
            <property name="text">
-            <string>Save to CSV</string>
+            <string>Find contours</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deleteContourButton">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Delete contour</string>
            </property>
           </widget>
          </item>

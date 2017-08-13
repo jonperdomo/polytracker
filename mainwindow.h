@@ -57,8 +57,10 @@ private slots:
     void resizeEvent(QResizeEvent *event);
     void on_frameSpinBox_valueChanged(int arg1);
     void on_action_Open_triggered();
-    void on_pointTable_currentCellChanged(int row, int column, int previous_row, int previous_column);
-    void on_saveButton_clicked();
+    void on_contourTable_itemSelectionChanged();
+    void on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column);
+    void on_deleteContourButton_clicked();
+    void on_findContoursButton_clicked();
 
 private:
     Ui::MainWindow *ui;
