@@ -162,6 +162,15 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
         cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
         cap.read(current_frame);
 
+        /// Update the table's centroid values
+        std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
+        for (int i=0; i<centroids.size(); i++)
+        {
+            cv::Point centroid = centroids.at(i);
+            QString text = QString("%1, %2").arg(centroid.x).arg(centroid.y);
+            ui->contourTable->setItem(i, 1, new QTableWidgetItem(text));
+        }
+
         /// Draw contours
         if (ui->contoursCheckBox->isChecked())
         {
