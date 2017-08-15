@@ -116,7 +116,8 @@ void MainWindow::drawCrosshair(int x, int y, QColor color)
     QPen pen = QPen(color, 1, Qt::SolidLine, Qt::SquareCap, Qt::BevelJoin);
     scene->addEllipse( x-5, y-5, 10, 10, pen);
     scene->addLine(x-4, y, x+4, y, pen);
-    scene->addLine(x, y-4, x, y+4, pen);
+    scene->addLine(x, y-4, x, y-1, pen);
+    scene->addLine(x, y+1, x, y+4, pen);
 }
 
 void MainWindow::savePointsToCSV(QString filename)
@@ -176,7 +177,6 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
                 }
-
             }
         }
 
@@ -187,7 +187,8 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
             for (int i=0; i<centroids.size(); i++)
             {
                 cv::Point centroid = centroids.at(i);
-                drawCrosshair(centroid.x, centroid.y);
+                cv::Scalar color = contour_colors.at(i);
+                drawCrosshair(centroid.x, centroid.y, QColor(color.val[0], color.val[1], color.val[2], 150));
             }
         }
 
@@ -242,6 +243,7 @@ void MainWindow::updateAllContours()
     int max_size = 0;
     ContourListSet initial_contours;
     HierarchyListSet initial_hierarchies;
+    std::vector<std::vector<cv::Point>> initial_centroids(frame_count);
     for (int i=0; i<frame_count; i++)
     {
         cap.set(CV_CAP_PROP_POS_FRAMES, i);
@@ -269,7 +271,7 @@ void MainWindow::updateAllContours()
         for(int j=0; j<(int)contours.size(); j++)
         {
             Contour contour = contours.at(j);
-            frame_centroids[i].push_back(getMeanPoint(contour));
+            initial_centroids[i].push_back(getMeanPoint(contour));
         }
     }
     contour_colors.resize(initial_contours.at(0).size());
@@ -280,11 +282,12 @@ void MainWindow::updateAllContours()
         /// Match first contour
         frame_contours.at(0).push_back(initial_contours.at(0).at(c));
         frame_hierarchies.at(0).push_back(initial_hierarchies.at(0).at(c));
-        std::vector<cv::Point> first_set = frame_centroids.at(0);
+        frame_centroids.at(0).push_back(initial_centroids.at(0).at(c));
+        std::vector<cv::Point> first_set = initial_centroids.at(0);
         cv::Point first_point = first_set.at(c);
         for (int i=1; i<(int)frame_count; i++)
         {
-            std::vector<cv::Point> point_set = frame_centroids.at(i);
+            std::vector<cv::Point> point_set = initial_centroids.at(i);
             int best_distance = current_frame.cols;
             int index = -1;
             for (int k=0; k<(int)point_set.size(); k++)
@@ -301,6 +304,7 @@ void MainWindow::updateAllContours()
             first_point = point_set.at(index);
             frame_contours.at(i).push_back(initial_contours.at(i).at(index));
             frame_hierarchies.at(i).push_back(initial_hierarchies.at(i).at(index));
+            frame_centroids.at(i).push_back(initial_centroids.at(i).at(index));
         }
         /// Set the color for the contour
         cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
