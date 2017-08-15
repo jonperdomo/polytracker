@@ -62,6 +62,10 @@ private slots:
     void on_deleteContourButton_clicked();
     void on_findContoursButton_clicked();
 
+    void on_contoursCheckBox_stateChanged(int arg1);
+
+    void on_centroidsCheckBox_stateChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     std::string video_filepath;

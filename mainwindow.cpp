@@ -310,7 +310,7 @@ void MainWindow::updateAllContours()
         cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
         contour_colors[c] = (color);
 
-        /// Add first contour to the table
+        /// Add contours to the table
         ui->contourTable->insertRow(ui->contourTable->rowCount());
         ui->contourTable->setItem(ui->contourTable->rowCount()-1, 0, new QTableWidgetItem());
         ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
@@ -422,4 +422,20 @@ void MainWindow::on_findContoursButton_clicked()
     /// TODO: Check if contours have been updated (deleted) before doing this.
     updateAllContours();
     on_frameSpinBox_valueChanged(ui->frameSpinBox->value());
+}
+
+void MainWindow::on_contoursCheckBox_stateChanged(int arg1)
+{
+    /// Outline the contour selected in the table
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    int row = ui->contourTable->currentRow();
+    drawAllContours(frame_index, row);
+}
+
+void MainWindow::on_centroidsCheckBox_stateChanged(int arg1)
+{
+    /// Outline the contour selected in the table
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    int row = ui->contourTable->currentRow();
+    drawAllContours(frame_index, row);
 }

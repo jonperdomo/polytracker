@@ -101,6 +101,11 @@
            <set>AlignLeading|AlignVCenter</set>
           </property>
          </column>
+         <column>
+          <property name="text">
+           <string>Centroid</string>
+          </property>
+         </column>
         </widget>
        </item>
        <item>
@@ -224,8 +229,8 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>411</x>
-     <y>390</y>
+     <x>259</x>
+     <y>398</y>
     </hint>
     <hint type="destinationlabel">
      <x>53</x>
