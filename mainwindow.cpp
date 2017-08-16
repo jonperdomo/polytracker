@@ -40,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
+    connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
     connect(ui->contourTable, SIGNAL(itemSelectionChanged()), this, SLOT(on_contourTable_itemSelectionChanged()));
     connect(ui->contourTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_contourTable_currentCellChanged(int,int,int,int)));
@@ -61,6 +62,36 @@ void MainWindow::showMousePosition(QPointF &pos)
         if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
             ui->mousePositionLabel->setText("x: " + QString::number(x) + ", y: " + QString::number(y));
+        }
+    }
+}
+
+void MainWindow::showClosestContour(QPointF &pos)
+{
+    if (frame_centroids.size()>0)
+    {
+        cv::Point mouse;
+        mouse.x = pos.x();
+        mouse.y = pos.y();
+        int reach = 15;
+        int best_distance = current_frame.cols;
+        int index = -1;
+        int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+        std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
+        for (int i=0; i<centroids.size(); i++)
+        {
+            cv::Point centroid = centroids.at(i);
+            double dist = cv::norm(centroid-mouse);
+
+            if (dist < best_distance)
+            {
+                best_distance = dist;
+                index = i;
+            }
+        }
+        if (best_distance < reach)
+        {
+            drawAllContours(frame_index, index);
         }
     }
 }

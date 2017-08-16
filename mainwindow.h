@@ -49,9 +49,8 @@ public:
 
 public slots:
     void showMousePosition(QPointF& pos);
+    void showClosestContour(QPointF& pos);
     void onPixelClicked(QPointF& pos);
-    //float closest(std::vector<cv::Point> p1, std::vector<cv::Point> p2);
-    //std::pair<int, int> find_closest_points_dac(std::vector<cv::Point> p1, std::vector<cv::Point> p2);
 
 private slots:
     void resizeEvent(QResizeEvent *event);
