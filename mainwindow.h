@@ -66,6 +66,8 @@ private slots:
     void on_actionSave_to_CSV_triggered();
     void on_mainTabs_currentChanged(int index);
 
+    void on_trackingApplyButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     std::string video_filepath;
@@ -80,6 +82,8 @@ private:
     ImageItem *image_item;
     Chart *chart;
     QChartView *chart_view;
+    int blur;
+    int threshold;
     void removeAllSceneEllipses();
     void removeAllSceneLines();
     void drawCrosshair(int x, int y, QColor color=QColor(50,205,50,100));

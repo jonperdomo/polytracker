@@ -3,30 +3,38 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    blur(3),
+    threshold(100)
 {
-    // Set up Qt toolbar window
+    /// Set up Qt toolbar window
     ui->setupUi(this);
     ui->contourTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     ui->contourPanel->hide();
     ui->frameSlider->setEnabled(false);
     ui->frameSpinBox->setEnabled(false);
 
-    // Set window icon
+    /// Set window icon
     QPixmap logo = QPixmap(":/Logo/northern-red.png");
     //setWindowIcon(QIcon(logo));
 
-    // Set up scene
+    /// Set up scene
     scene = new QGraphicsScene(this);
     ui->graphicsView->setScene(scene);
     ui->graphicsView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
     ui->insetView->setScene(scene);
     ui->insetView->setBackgroundBrush(QBrush(Qt::black, Qt::SolidPattern));
 
-    // Set up frame
+    /// Set up frame
     image_item = new ImageItem();
     image_item->setPixmap(logo);
     scene->addItem(image_item);
+
+    /// Set up blur, threshold scrollbars
+    ui->blurScrollBar->setRange(1, 10);
+    ui->blurScrollBar->setValue(blur);
+    ui->thresholdScrollBar->setRange(0, 255);
+    ui->thresholdScrollBar->setValue(threshold);
 
     //// Set up chart
     //chart = new Chart;
@@ -38,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     //chart_view->setFixedSize(300,400);
     //ui->chartLayout->addWidget(chart_view);
 
-    // Connect signals
+    /// Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
@@ -68,7 +76,7 @@ void MainWindow::showMousePosition(QPointF &pos)
 
 void MainWindow::showClosestContour(QPointF &pos)
 {
-    if (ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
+    if (ui->mainTabs->currentIndex()==0 && ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
     {
         cv::Point mouse;
         mouse.x = pos.x();
@@ -105,13 +113,6 @@ void MainWindow::onPixelClicked(QPointF &pos)
         int y = static_cast<int>(pos.y());
         if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
-//            int row = ui->frameSlider->value()-1;
-////            QString text = QString("%1, %2").arg(x).arg(y);
-////            ui->contourTable->setItem(row, 0, new QTableWidgetItem(text));
-//            removeAllSceneEllipses();
-//            removeAllSceneLines();
-//            drawCrosshair(x, y);
-
             // Update inset
             ui->insetView->centerOn(x,y);
         }
@@ -253,15 +254,16 @@ void MainWindow::showCannyFrame(int frame_index)
         cap.read(current_frame);
 
         /// Convert image to gray and blur it
-        int thresh = 100;
+        int blur = ui->blurScrollBar->value();
+        int threshold = ui->thresholdScrollBar->value();
         cv::RNG rng(12345);
         cv::Mat src_gray;
         cv::Mat canny_output;
         cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
-        cv::blur(src_gray, src_gray, cv::Size(3,3));
+        cv::blur(src_gray, src_gray, cv::Size(blur,blur));
 
         /// Detect edges using canny
-        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+        cv::Canny(src_gray, canny_output, threshold, threshold*2, 3);
 
         /// Show in a window
         img = QImage((uchar*) canny_output.data, canny_output.cols, canny_output.rows, canny_output.step, QImage::Format_Grayscale8);
@@ -309,7 +311,8 @@ void MainWindow::updateAllContours()
     frame_contours.resize(frame_count);
     frame_hierarchies.resize(frame_count);
 
-    int thresh = 100;
+    int blur = ui->blurScrollBar->value();
+    int threshold = ui->thresholdScrollBar->value();
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
@@ -323,10 +326,10 @@ void MainWindow::updateAllContours()
 
         /// Convert image to gray and blur it
         cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
-        cv::blur(src_gray, src_gray, cv::Size(3,3));
+        cv::blur(src_gray, src_gray, cv::Size(blur,blur));
 
         /// Detect edges using canny
-        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+        cv::Canny(src_gray, canny_output, threshold, threshold*2, 3);
 
         /// Find contours
         std::vector<cv::Vec4i> hierarchy;
@@ -389,8 +392,16 @@ void MainWindow::updateAllContours()
 void MainWindow::on_frameSpinBox_valueChanged(int arg1)
 {
     int frame_index = arg1-1;
-    int contour_index = ui->contourTable->currentRow();
-    drawAllContours(frame_index, contour_index);
+    int tab = ui->mainTabs->currentIndex();
+    if (tab == 0)
+    {
+        int contour_index = ui->contourTable->currentRow();
+        drawAllContours(frame_index, contour_index);
+    }
+    else if (tab == 1)
+    {
+        showCannyFrame(frame_index);
+    }
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -535,4 +546,10 @@ void MainWindow::on_mainTabs_currentChanged(int index)
     } else if (index==1) {
         showCannyFrame(frame_index);
     }
+}
+
+void MainWindow::on_trackingApplyButton_clicked()
+{
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    showCannyFrame(frame_index);
 }
