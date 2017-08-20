@@ -65,6 +65,8 @@ private slots:
 
     void on_centroidsCheckBox_stateChanged(int arg1);
 
+    void on_actionSave_to_CSV_triggered();
+
 private:
     Ui::MainWindow *ui;
     std::string video_filepath;

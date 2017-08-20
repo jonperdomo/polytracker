@@ -164,6 +164,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_Open"/>
+    <addaction name="separator"/>
+    <addaction name="actionSave_to_CSV"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -209,6 +211,11 @@
   <action name="actionData">
    <property name="text">
     <string>Data</string>
+   </property>
+  </action>
+  <action name="actionSave_to_CSV">
+   <property name="text">
+    <string>Save to CSV</string>
    </property>
   </action>
  </widget>

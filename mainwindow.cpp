@@ -28,15 +28,15 @@ MainWindow::MainWindow(QWidget *parent) :
     image_item->setPixmap(logo);
     scene->addItem(image_item);
 
-    // Set up chart
-    chart = new Chart;
-    chart->setTitle("Dynamic spline chart");
-    chart->legend()->hide();
-    chart->setAnimationOptions(QChart::AllAnimations);
-    chart_view = new QChartView(chart);
-    chart_view->setRenderHint(QPainter::Antialiasing);
-    chart_view->setFixedSize(300,400);
-    ui->chartLayout->addWidget(chart_view);
+    //// Set up chart
+    //chart = new Chart;
+    //chart->setTitle("Dynamic spline chart");
+    //chart->legend()->hide();
+    //chart->setAnimationOptions(QChart::AllAnimations);
+    //chart_view = new QChartView(chart);
+    //chart_view->setRenderHint(QPainter::Antialiasing);
+    //chart_view->setFixedSize(300,400);
+    //ui->chartLayout->addWidget(chart_view);
 
     // Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
@@ -68,7 +68,7 @@ void MainWindow::showMousePosition(QPointF &pos)
 
 void MainWindow::showClosestContour(QPointF &pos)
 {
-    if (frame_centroids.size()>0)
+    if (ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
     {
         cv::Point mouse;
         mouse.x = pos.x();
@@ -154,19 +154,17 @@ void MainWindow::drawCrosshair(int x, int y, QColor color)
 void MainWindow::savePointsToCSV(QString filename)
 {
     QString text_data;
-    int row_count = ui->contourTable->rowCount();
-    text_data += QString("x,y,\n");
-    for (int row=0; row<row_count; row++)
+    text_data += QString("Centroid points,\nFrame,Contour,X,Y,\n");
+    qDebug() << "frame centroids size: " << frame_centroids.size();
+    for (int frame=0; frame<frame_centroids.size(); frame++)
     {
-        QTableWidgetItem* item = ui->contourTable->item(row, 0);
-        if (item)
+        /// Populate the CSV
+        std::vector<cv::Point> centroids = frame_centroids.at(frame);
+        for (int contour=0; contour<centroids.size(); contour++)
         {
-            QStringList coordinate = item->text().split(",");
-            text_data += coordinate[0];
-            text_data += ",";
-            text_data += coordinate[1];
-            text_data += ",";
-            text_data += "\n";
+            cv::Point centroid = centroids.at(contour);
+            text_data += QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
+            //qDebug() << QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
         }
     }
     QFile csv_file(filename);
@@ -413,8 +411,8 @@ void MainWindow::on_action_Open_triggered()
     ui->insetView->scale(5,5);
     ui->insetView->centerOn(bounds.center());
 
-    /// Set up chart
-    chart->axisX()->setRange(1, frame_count);
+    ///// Set up chart
+    //chart->axisX()->setRange(1, frame_count);
 
     /// Enable frame sliders
     ui->frameSlider->setEnabled(true);
@@ -478,4 +476,15 @@ void MainWindow::on_centroidsCheckBox_stateChanged(int arg1)
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     int row = ui->contourTable->currentRow();
     drawAllContours(frame_index, row);
+}
+
+void MainWindow::on_actionSave_to_CSV_triggered()
+{
+    QString filename = QFileDialog::getSaveFileName(this,
+        tr("Save all contour centroids to CSV"), "",
+        tr("CSV (*.csv);;All Files (*)"));
+    if (!filename.trimmed().isEmpty())
+    {
+        savePointsToCSV(filename);
+    }
 }
