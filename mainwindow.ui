@@ -44,8 +44,17 @@
         </item>
         <item>
          <widget class="QSlider" name="frameSlider">
+          <property name="maximum">
+           <number>0</number>
+          </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="tickPosition">
+           <enum>QSlider::TicksBelow</enum>
+          </property>
+          <property name="tickInterval">
+           <number>1</number>
           </property>
          </widget>
         </item>
@@ -71,7 +80,7 @@
      </layout>
     </item>
     <item>
-     <widget class="QWidget" name="pointEditorPanel" native="true">
+     <widget class="QWidget" name="contourPanel" native="true">
       <layout class="QVBoxLayout" name="tableLayout">
        <item>
         <widget class="QTabWidget" name="mainTabs">
@@ -145,7 +154,51 @@
           </attribute>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <layout class="QVBoxLayout" name="trackingTabLayout"/>
+            <layout class="QVBoxLayout" name="trackingTabLayout">
+             <item>
+              <layout class="QFormLayout" name="trackingScrollBarLayout">
+               <item row="0" column="0">
+                <widget class="QLabel" name="blurLabel">
+                 <property name="text">
+                  <string>Adjust blur</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="thresholdLabel">
+                 <property name="text">
+                  <string>Adjust threshold</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="1">
+                <widget class="QScrollBar" name="thresholdScrollBar">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QScrollBar" name="blurScrollBar">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
+              <layout class="QGridLayout" name="trackingButtonLayout">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="trackingApplyButton">
+                 <property name="text">
+                  <string>Apply</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set up Qt toolbar window
     ui->setupUi(this);
     ui->contourTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-    ui->pointEditorPanel->hide();
+    ui->contourPanel->hide();
     ui->frameSlider->setEnabled(false);
     ui->frameSpinBox->setEnabled(false);
 
@@ -389,7 +389,7 @@ void MainWindow::on_action_Open_triggered()
 
     /// Enable video control elements, update elements with video information.
     int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
-    ui->pointEditorPanel->show();
+    ui->contourPanel->show();
     ui->videoComboBox->addItem(video_filename);
 
     /// Get contours
