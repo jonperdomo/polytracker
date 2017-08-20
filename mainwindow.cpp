@@ -240,6 +240,41 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
     }
 }
 
+void MainWindow::showCannyFrame(int frame_index)
+{
+    if (cap.isOpened())
+    {
+        /// Clear all the crosshairs
+        removeAllSceneEllipses();
+        removeAllSceneLines();
+
+        /// Set the frame
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+        cap.read(current_frame);
+
+        /// Convert image to gray and blur it
+        int thresh = 100;
+        cv::RNG rng(12345);
+        cv::Mat src_gray;
+        cv::Mat canny_output;
+        cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+        cv::blur(src_gray, src_gray, cv::Size(3,3));
+
+        /// Detect edges using canny
+        cv::Canny(src_gray, canny_output, thresh, thresh*2, 3);
+
+        /// Show in a window
+        img = QImage((uchar*) canny_output.data, canny_output.cols, canny_output.rows, canny_output.step, QImage::Format_Grayscale8);
+        QPixmap pixmap;
+        pixmap = QPixmap::fromImage(img);
+
+        /// Show in view, scaled to view bounds & keeping aspect ratio
+        image_item->setPixmap(pixmap);
+    } else {
+        qDebug() << "capture closed!";
+    }
+}
+
 cv::Point MainWindow::getMeanPoint(const Contour contour)
 {
     cv::Point zero(0.0f, 0.0f);
@@ -278,7 +313,6 @@ void MainWindow::updateAllContours()
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
-    int max_size = 0;
     ContourListSet initial_contours;
     HierarchyListSet initial_hierarchies;
     std::vector<std::vector<cv::Point>> initial_centroids(frame_count);
@@ -300,10 +334,6 @@ void MainWindow::updateAllContours()
         cv::findContours(canny_output, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
         initial_contours.push_back(contours);
         initial_hierarchies.push_back(hierarchy);
-        if ((int)contours.size() > max_size)
-        {
-            max_size = contours.size();
-        }
 
         /// Find centroid (mean) of each contour
         for(int j=0; j<(int)contours.size(); j++)
@@ -315,7 +345,7 @@ void MainWindow::updateAllContours()
     contour_colors.resize(initial_contours.at(0).size());
     qDebug() << "Completed finding contours";
 
-    for (int c=0; c<contour_colors.size(); c++)
+    for (int c=0; c<(int)contour_colors.size(); c++)
     {
         /// Match first contour
         frame_contours.at(0).push_back(initial_contours.at(0).at(c));
@@ -367,11 +397,6 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 {
     if (!current_frame.empty())
     {
-        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-        QPixmap pixmap = QPixmap::fromImage(img);
-
-        // Show in view, scaled to view bounds & keeping aspect ratio
-        image_item->setPixmap(pixmap);
         QRectF bounds = scene->itemsBoundingRect();
         ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
         ui->graphicsView->centerOn(0,0);
@@ -380,6 +405,16 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::on_action_Open_triggered()
 {       
+    /// Clear current contours
+    frame_centroids.clear();
+    frame_contours.clear();
+    frame_hierarchies.clear();
+    contour_colors.clear();
+
+    /// Remove the previous crosshairs
+    removeAllSceneEllipses();
+    removeAllSceneLines();
+
     /// Load a video
     QString result = QFileDialog::getOpenFileName(this, tr("Select a Video File"), "/home", tr("Video Files (*.avi)"));
     video_filepath = result.toUtf8().constData();
@@ -487,5 +522,17 @@ void MainWindow::on_actionSave_to_CSV_triggered()
     if (!filename.trimmed().isEmpty())
     {
         savePointsToCSV(filename);
+    }
+}
+
+void MainWindow::on_mainTabs_currentChanged(int index)
+{
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    if (index==0)
+    {
+        int contour_index = ui->contourTable->currentRow();
+        drawAllContours(frame_index, contour_index);
+    } else if (index==1) {
+        showCannyFrame(frame_index);
     }
 }

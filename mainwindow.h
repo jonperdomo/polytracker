@@ -42,6 +42,7 @@ class MainWindow : public QMainWindow
 
 public:
     cv::Mat current_frame;
+    cv::Mat blurred_frame;
     cv::Rect2d roi;
 
     explicit MainWindow(QWidget *parent = 0);
@@ -60,12 +61,10 @@ private slots:
     void on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column);
     void on_deleteContourButton_clicked();
     void on_findContoursButton_clicked();
-
     void on_contoursCheckBox_stateChanged(int arg1);
-
     void on_centroidsCheckBox_stateChanged(int arg1);
-
     void on_actionSave_to_CSV_triggered();
+    void on_mainTabs_currentChanged(int index);
 
 private:
     Ui::MainWindow *ui;
@@ -87,6 +86,7 @@ private:
     void savePointsToCSV(QString filename);
     void updateAllContours();
     void drawAllContours(int frame_index, int contour_index=-1);
+    void showCannyFrame(int frame_index);
     cv::Point getMeanPoint(const Contour contour);
     cv::Point getCenterOfMass(const Contour contour);
 };
