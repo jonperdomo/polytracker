@@ -410,6 +410,7 @@ void MainWindow::on_action_Open_triggered()
     /// 5X scale in inset view
     ui->insetView->scale(5,5);
     ui->insetView->centerOn(bounds.center());
+    ui->insetView->setFixedHeight(250);
 
     ///// Set up chart
     //chart->axisX()->setRange(1, frame_count);
