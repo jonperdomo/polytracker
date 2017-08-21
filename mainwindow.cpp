@@ -5,7 +5,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     blur(3),
-    threshold(100)
+    threshold(200)
 {
     /// Set up Qt toolbar window
     ui->setupUi(this);
@@ -30,11 +30,9 @@ MainWindow::MainWindow(QWidget *parent) :
     image_item->setPixmap(logo);
     scene->addItem(image_item);
 
-    /// Set up blur, threshold scrollbars
-    ui->blurScrollBar->setRange(1, 10);
-    ui->blurScrollBar->setValue(blur);
-    ui->thresholdScrollBar->setRange(0, 255);
-    ui->thresholdScrollBar->setValue(threshold);
+    /// Set up blur, threshold spinboxes
+    ui->blurSpinBox->setValue(blur);
+    ui->thresholdSpinBox->setValue(threshold);
 
     //// Set up chart
     //chart = new Chart;
@@ -253,25 +251,33 @@ void MainWindow::showCannyFrame(int frame_index)
         cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
         cap.read(current_frame);
 
-        /// Convert image to gray and blur it
-        int blur = ui->blurScrollBar->value();
-        int threshold = ui->thresholdScrollBar->value();
-        cv::RNG rng(12345);
-        cv::Mat src_gray;
-        cv::Mat canny_output;
-        cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
-        cv::blur(src_gray, src_gray, cv::Size(blur,blur));
+        try
+        {
+            /// Convert image to gray and blur it
+            int blur = ui->blurSpinBox->value();
+            int threshold = ui->thresholdSpinBox->value();
+            cv::RNG rng(12345);
+            cv::Mat src_gray;
+            cv::Mat canny_output;
+            cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+            cv::blur(src_gray, src_gray, cv::Size(blur,blur));
 
-        /// Detect edges using canny
-        cv::Canny(src_gray, canny_output, threshold, threshold*2, 3);
+            /// Detect edges using canny
+            cv::Canny(src_gray, canny_output, threshold/2, threshold, 3);
 
-        /// Show in a window
-        img = QImage((uchar*) canny_output.data, canny_output.cols, canny_output.rows, canny_output.step, QImage::Format_Grayscale8);
-        QPixmap pixmap;
-        pixmap = QPixmap::fromImage(img);
+            /// Show in a window
+            img = QImage((uchar*) canny_output.data, canny_output.cols, canny_output.rows, canny_output.step, QImage::Format_Grayscale8);
+            QPixmap pixmap;
+            pixmap = QPixmap::fromImage(img);
 
-        /// Show in view, scaled to view bounds & keeping aspect ratio
-        image_item->setPixmap(pixmap);
+            /// Show in view, scaled to view bounds & keeping aspect ratio
+            image_item->setPixmap(pixmap);
+        }
+        catch (const std::runtime_error& error)
+        {
+            qDebug() << "blur, threshold combination failed!";
+        }
+
     } else {
         qDebug() << "capture closed!";
     }
@@ -311,8 +317,8 @@ void MainWindow::updateAllContours()
     frame_contours.resize(frame_count);
     frame_hierarchies.resize(frame_count);
 
-    int blur = ui->blurScrollBar->value();
-    int threshold = ui->thresholdScrollBar->value();
+    int blur = ui->blurSpinBox->value();
+    int threshold = ui->thresholdSpinBox->value();
     cv::RNG rng(12345);
     cv::Mat src_gray;
     cv::Mat canny_output;
@@ -551,5 +557,6 @@ void MainWindow::on_mainTabs_currentChanged(int index)
 void MainWindow::on_trackingApplyButton_clicked()
 {
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    updateAllContours();
     showCannyFrame(frame_index);
 }

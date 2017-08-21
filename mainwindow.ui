@@ -156,45 +156,89 @@
            <item>
             <layout class="QVBoxLayout" name="trackingTabLayout">
              <item>
-              <layout class="QFormLayout" name="trackingScrollBarLayout">
-               <item row="0" column="0">
-                <widget class="QLabel" name="blurLabel">
-                 <property name="text">
-                  <string>Adjust blur</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="0">
-                <widget class="QLabel" name="thresholdLabel">
-                 <property name="text">
-                  <string>Adjust threshold</string>
-                 </property>
-                </widget>
-               </item>
-               <item row="1" column="1">
-                <widget class="QScrollBar" name="thresholdScrollBar">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-               <item row="0" column="1">
-                <widget class="QScrollBar" name="blurScrollBar">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
               <layout class="QGridLayout" name="trackingButtonLayout">
-               <item row="0" column="0">
+               <item row="1" column="0">
                 <widget class="QPushButton" name="trackingApplyButton">
                  <property name="text">
                   <string>Apply</string>
                  </property>
                 </widget>
+               </item>
+               <item row="0" column="0">
+                <layout class="QVBoxLayout" name="verticalLayout">
+                 <item>
+                  <layout class="QHBoxLayout" name="blurLayout">
+                   <item>
+                    <widget class="QSpinBox" name="blurSpinBox">
+                     <property name="prefix">
+                      <string>Blur: </string>
+                     </property>
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>10</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSlider" name="blurSlider">
+                     <property name="minimum">
+                      <number>1</number>
+                     </property>
+                     <property name="maximum">
+                      <number>10</number>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="tickPosition">
+                      <enum>QSlider::TicksBelow</enum>
+                     </property>
+                     <property name="tickInterval">
+                      <number>1</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                 <item>
+                  <layout class="QHBoxLayout" name="thresholdLayout">
+                   <item>
+                    <widget class="QSpinBox" name="thresholdSpinBox">
+                     <property name="prefix">
+                      <string>Threshold: </string>
+                     </property>
+                     <property name="minimum">
+                      <number>10</number>
+                     </property>
+                     <property name="maximum">
+                      <number>255</number>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QSlider" name="thresholdSlider">
+                     <property name="minimum">
+                      <number>10</number>
+                     </property>
+                     <property name="maximum">
+                      <number>255</number>
+                     </property>
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="tickPosition">
+                      <enum>QSlider::TicksBelow</enum>
+                     </property>
+                     <property name="tickInterval">
+                      <number>50</number>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </item>
+                </layout>
                </item>
               </layout>
              </item>
@@ -317,6 +361,70 @@
     <hint type="destinationlabel">
      <x>147</x>
      <y>390</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>blurSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>blurSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>554</x>
+     <y>152</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>623</x>
+     <y>149</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>blurSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>blurSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>644</x>
+     <y>156</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>550</x>
+     <y>158</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>thresholdSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>thresholdSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>623</x>
+     <y>287</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>555</x>
+     <y>289</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>thresholdSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>thresholdSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>560</x>
+     <y>290</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>624</x>
+     <y>292</y>
     </hint>
    </hints>
   </connection>
