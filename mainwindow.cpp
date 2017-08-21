@@ -335,7 +335,7 @@ void MainWindow::updateAllContours()
         cv::blur(src_gray, src_gray, cv::Size(blur,blur));
 
         /// Detect edges using canny
-        cv::Canny(src_gray, canny_output, threshold, threshold*2, 3);
+        cv::Canny(src_gray, canny_output, threshold/2, threshold, 3);
 
         /// Find contours
         std::vector<cv::Vec4i> hierarchy;
@@ -558,5 +558,17 @@ void MainWindow::on_trackingApplyButton_clicked()
 {
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     updateAllContours();
+    showCannyFrame(frame_index);
+}
+
+void MainWindow::on_blurSpinBox_valueChanged(int arg1)
+{
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    showCannyFrame(frame_index);
+}
+
+void MainWindow::on_thresholdSpinBox_valueChanged(int arg1)
+{
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     showCannyFrame(frame_index);
 }

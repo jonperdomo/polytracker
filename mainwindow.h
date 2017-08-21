@@ -68,6 +68,10 @@ private slots:
 
     void on_trackingApplyButton_clicked();
 
+    void on_blurSpinBox_valueChanged(int arg1);
+
+    void on_thresholdSpinBox_valueChanged(int arg1);
+
 private:
     Ui::MainWindow *ui;
     std::string video_filepath;
