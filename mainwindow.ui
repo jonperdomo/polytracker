@@ -85,7 +85,7 @@
        <item>
         <widget class="QTabWidget" name="mainTabs">
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <widget class="QWidget" name="contourTab">
           <attribute name="title">
@@ -113,7 +113,7 @@
                </attribute>
                <column>
                 <property name="text">
-                 <string>New Column</string>
+                 <string>Contour</string>
                 </property>
                </column>
                <column>

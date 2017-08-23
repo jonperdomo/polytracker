@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     /// Set up Qt toolbar window
     ui->setupUi(this);
     ui->contourTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    ui->contourTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     ui->contourPanel->hide();
     ui->frameSlider->setEnabled(false);
     ui->frameSpinBox->setEnabled(false);
@@ -489,13 +490,16 @@ void MainWindow::on_contourTable_currentCellChanged(int row, int column, int pre
 
 void MainWindow::on_deleteContourButton_clicked()
 {
+    qDebug() << "delete button was pressed.";
     QItemSelectionModel *selection = ui->contourTable->selectionModel();
     int row;
     int shift = 0;
+
     foreach (QModelIndex index, selection->selectedRows())
     {
         row = index.row() - shift;
         ui->contourTable->removeRow(row);
+
         /// Erase the contour in each frame
         for (int i=0; i<frame_contours.size(); i++)
         {
