@@ -47,7 +47,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /// Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
-    connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
+    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
     connect(ui->contourTable, SIGNAL(itemSelectionChanged()), this, SLOT(on_contourTable_itemSelectionChanged()));
     connect(ui->contourTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_contourTable_currentCellChanged(int,int,int,int)));
@@ -98,7 +98,8 @@ void MainWindow::showClosestContour(QPointF &pos)
         }
         if (best_distance < reach)
         {
-            drawAllContours(frame_index, index);
+            ui->contourTable->selectRow(index);
+            drawAllContours(frame_index);
         }
     }
 }
@@ -179,7 +180,7 @@ void MainWindow::savePointsToCSV(QString filename)
     qDebug() << "saved all points: " << filename;
 }
 
-void MainWindow::drawAllContours(int frame_index, int contour_index)
+void MainWindow::drawAllContours(int frame_index)
 {
     if (frame_contours.size()>0)
     {
@@ -200,6 +201,14 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
             ui->contourTable->setItem(i, 1, new QTableWidgetItem(text));
         }
 
+        /// Get the current selected contours
+        QItemSelectionModel *selection = ui->contourTable->selectionModel();
+        std::vector<int> inds;
+        foreach (QModelIndex index, selection->selectedRows())
+        {
+            inds.push_back(index.row());
+        }
+
         /// Draw contours
         if (ui->contoursCheckBox->isChecked())
         {
@@ -209,8 +218,9 @@ void MainWindow::drawAllContours(int frame_index, int contour_index)
             for (int i=0; i<contour_colors.size(); i++)
             {
                 cv::Scalar color = contour_colors.at(i);
-                if (i==contour_index)
+                if (std::find(inds.begin(), inds.end(), i) != inds.end())
                 {
+                    inds.erase(std::remove(inds.begin(), inds.end(), i), inds.end());
                     cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
@@ -402,8 +412,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     int tab = ui->mainTabs->currentIndex();
     if (tab == 0)
     {
-        int contour_index = ui->contourTable->currentRow();
-        drawAllContours(frame_index, contour_index);
+        drawAllContours(frame_index);
     }
     else if (tab == 1)
     {
@@ -471,8 +480,10 @@ void MainWindow::on_action_Open_triggered()
     /// Enable frame sliders
     ui->frameSlider->setEnabled(true);
     ui->frameSlider->setRange(1, frame_count);
+    ui->frameSlider->setValue(1);
     ui->frameSpinBox->setEnabled(true);
     ui->frameSpinBox->setRange(1, frame_count);
+    ui->frameSpinBox->setValue(1);
 }
 
 void MainWindow::on_contourTable_itemSelectionChanged()
@@ -485,7 +496,7 @@ void MainWindow::on_contourTable_currentCellChanged(int row, int column, int pre
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    drawAllContours(frame_index, row);
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_deleteContourButton_clicked()
@@ -523,16 +534,14 @@ void MainWindow::on_contoursCheckBox_stateChanged(int arg1)
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    int row = ui->contourTable->currentRow();
-    drawAllContours(frame_index, row);
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_centroidsCheckBox_stateChanged(int arg1)
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    int row = ui->contourTable->currentRow();
-    drawAllContours(frame_index, row);
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_actionSave_to_CSV_triggered()
@@ -551,9 +560,10 @@ void MainWindow::on_mainTabs_currentChanged(int index)
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     if (index==0)
     {
-        int contour_index = ui->contourTable->currentRow();
-        drawAllContours(frame_index, contour_index);
-    } else if (index==1) {
+        drawAllContours(frame_index);
+    }
+    else if (index==1)
+    {
         showCannyFrame(frame_index);
     }
 }

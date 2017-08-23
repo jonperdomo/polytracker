@@ -93,7 +93,7 @@ private:
     void drawCrosshair(int x, int y, QColor color=QColor(50,205,50,100));
     void savePointsToCSV(QString filename);
     void updateAllContours();
-    void drawAllContours(int frame_index, int contour_index=-1);
+    void drawAllContours(int frame_index);
     void showCannyFrame(int frame_index);
     cv::Point getMeanPoint(const Contour contour);
     cv::Point getCenterOfMass(const Contour contour);
