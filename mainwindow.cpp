@@ -288,9 +288,6 @@ void MainWindow::showCannyFrame(int frame_index)
         {
             qDebug() << "blur, threshold combination failed!";
         }
-
-    } else {
-        qDebug() << "capture closed!";
     }
 }
 
@@ -432,58 +429,64 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 
 void MainWindow::on_action_Open_triggered()
 {       
-    /// Clear current contours
-    frame_centroids.clear();
-    frame_contours.clear();
-    frame_hierarchies.clear();
-    contour_colors.clear();
 
-    /// Remove the previous crosshairs
-    removeAllSceneEllipses();
-    removeAllSceneLines();
 
     /// Load a video
     QString result = QFileDialog::getOpenFileName(this, tr("Select a Video File"), "/home", tr("Video Files (*.avi)"));
     video_filepath = result.toUtf8().constData();
     QString video_filename = QString::fromStdString(video_filepath.substr(video_filepath.find_last_of("/\\") + 1));
-    cap = cv::VideoCapture(video_filepath);
-    qDebug() << "opened video: " << video_filename;
 
-    /// Enable video control elements, update elements with video information.
-    int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
-    ui->contourPanel->show();
-    ui->videoComboBox->addItem(video_filename);
+    if (!video_filename.isEmpty())
+    {
+        /// Clear current contours
+        frame_centroids.clear();
+        frame_contours.clear();
+        frame_hierarchies.clear();
+        contour_colors.clear();
 
-    /// Get contours
-    updateAllContours();
+        /// Remove the previous crosshairs
+        removeAllSceneEllipses();
+        removeAllSceneLines();
 
-    /// show frame zero
-    cap.set(CV_CAP_PROP_POS_FRAMES, 0);
-    cap.read(current_frame);
-    img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
-    QPixmap pixmap = QPixmap::fromImage(img);
+        cap = cv::VideoCapture(video_filepath);
+        qDebug() << "opened video: " << video_filename;
 
-    /// Show in view, scaled to view bounds & keeping aspect ratio
-    image_item->setPixmap(pixmap);
-    QRectF bounds = scene->itemsBoundingRect();
-    ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
-    ui->graphicsView->centerOn(0,0);
+        /// Enable video control elements, update elements with video information.
+        int frame_count = cap.get(CV_CAP_PROP_FRAME_COUNT);
+        ui->contourPanel->show();
+        ui->videoComboBox->addItem(video_filename);
 
-    /// 5X scale in inset view
-    ui->insetView->scale(5,5);
-    ui->insetView->centerOn(bounds.center());
-    ui->insetView->setFixedHeight(250);
+        /// Get contours
+        updateAllContours();
 
-    ///// Set up chart
-    //chart->axisX()->setRange(1, frame_count);
+        /// show frame zero
+        cap.set(CV_CAP_PROP_POS_FRAMES, 0);
+        cap.read(current_frame);
+        img = QImage((uchar*) current_frame.data, current_frame.cols, current_frame.rows, current_frame.step, QImage::Format_RGB888);
+        QPixmap pixmap = QPixmap::fromImage(img);
 
-    /// Enable frame sliders
-    ui->frameSlider->setEnabled(true);
-    ui->frameSlider->setRange(1, frame_count);
-    ui->frameSlider->setValue(1);
-    ui->frameSpinBox->setEnabled(true);
-    ui->frameSpinBox->setRange(1, frame_count);
-    ui->frameSpinBox->setValue(1);
+        /// Show in view, scaled to view bounds & keeping aspect ratio
+        image_item->setPixmap(pixmap);
+        QRectF bounds = scene->itemsBoundingRect();
+        ui->graphicsView->fitInView(bounds, Qt::KeepAspectRatio);
+        ui->graphicsView->centerOn(0,0);
+
+        /// 5X scale in inset view
+        ui->insetView->scale(5,5);
+        ui->insetView->centerOn(bounds.center());
+        ui->insetView->setFixedHeight(250);
+
+        ///// Set up chart
+        //chart->axisX()->setRange(1, frame_count);
+
+        /// Enable frame sliders
+        ui->frameSlider->setEnabled(true);
+        ui->frameSlider->setRange(1, frame_count);
+        ui->frameSlider->setValue(1);
+        ui->frameSpinBox->setEnabled(true);
+        ui->frameSpinBox->setRange(1, frame_count);
+        ui->frameSpinBox->setValue(1);
+    }
 }
 
 void MainWindow::on_contourTable_itemSelectionChanged()
