@@ -432,7 +432,7 @@ void MainWindow::on_action_Open_triggered()
 
 
     /// Load a video
-    QString result = QFileDialog::getOpenFileName(this, tr("Select a Video File"), "/home", tr("Video Files (*.avi)"));
+    QString result = QFileDialog::getOpenFileName(this, tr("Select a Video File"), "/home", tr("Video Files (*.avi *.mp4 *.m4v)"));
     video_filepath = result.toUtf8().constData();
     QString video_filename = QString::fromStdString(video_filepath.substr(video_filepath.find_last_of("/\\") + 1));
 
