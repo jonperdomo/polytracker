@@ -39,17 +39,34 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
-INCLUDEPATH += C:\Builds\OpenCV\opencv-build\install\include
-LIBS += -LC:\Builds\OpenCV\opencv-build\install\x86\mingw\lib \
-    -lopencv_core320.dll \
-    -lopencv_highgui320.dll \
-    -lopencv_imgcodecs320.dll \
-    -lopencv_imgproc320.dll \
-    -lopencv_features2d320.dll \
-    -lopencv_calib3d320.dll \
-    -lopencv_imgproc320.dll \
-    -lopencv_videoio320.dll \
-    -lopencv_video320.dll
+INCLUDEPATH += C:\Builds\OpenCV\opencv-VS141\install\include
+
+#CONFIG(debug,debug|release) {
+#LIBS += -LC:\Builds\OpenCV\opencv-VS141\install\x64\vc15\lib
+#LIBS += -lopencv_core320d
+#LIBS += -lopencv_imgproc320d
+#LIBS += -lopencv_highgui320d
+#LIBS += -lopencv_ml320d
+#LIBS += -lopencv_videoio320d
+#LIBS += -lopencv_features2d320d
+#LIBS += -lopencv_calib3d320d
+#LIBS += -lopencv_objdetect320d
+#LIBS += -lopencv_flann320d
+#LIBS += -lopencv_imgcodecs320d
+#}
+CONFIG(release,debug|release) {
+LIBS += -LC:\Builds\OpenCV\opencv-VS141\install\x64\vc15\lib
+LIBS += -lopencv_core320
+LIBS += -lopencv_imgproc320
+LIBS += -lopencv_highgui320
+LIBS += -lopencv_ml320
+LIBS += -lopencv_videoio320
+LIBS += -lopencv_features2d320
+LIBS += -lopencv_calib3d320
+LIBS += -lopencv_objdetect320
+LIBS += -lopencv_flann320
+LIBS += -lopencv_imgcodecs320
+}
 
 RESOURCES += \
     images.qrc
