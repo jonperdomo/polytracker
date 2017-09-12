@@ -17,7 +17,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /// Set window icon
     QPixmap logo = QPixmap(":/Logo/northern-red.png");
-    //setWindowIcon(QIcon(logo));
+    QPixmap icon = QPixmap(":/Logo/northern-red-icon.png");
+    setWindowIcon(QIcon(icon));
 
     /// Set up scene
     scene = new QGraphicsScene(this);

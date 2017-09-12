@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/Logo">
         <file>northern-red.png</file>
+        <file>northern-red-icon.png</file>
     </qresource>
 </RCC>
