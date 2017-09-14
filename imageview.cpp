@@ -25,6 +25,9 @@ void ImageView::mousePressEvent(QMouseEvent *event)
     origin = event->pos();
     band.setGeometry(QRect(origin, QSize()));
     band.show();
+    qDebug() << "View point: " << origin.x() << ", " << origin.y();
+    QPointF pixels = mapToScene(origin);
+    qDebug() << "Pixel point: " << (int)pixels.x() << ", " << (int)pixels.y();
 }
 
 void ImageView::mouseMoveEvent(QMouseEvent *event)
