@@ -114,7 +114,7 @@ void MainWindow::onPixelClicked(QPointF &pos)
         int y = static_cast<int>(pos.y());
         if (x >= 0 && y >= 0 && x <= mat_size.width && y <= mat_size.height)
         {
-            // Update inset
+            /// Update inset
             ui->insetView->centerOn(x,y);
         }
     }

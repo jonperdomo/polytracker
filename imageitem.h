@@ -5,7 +5,6 @@
 #include <QWidget>
 #include <QGraphicsPixmapItem>
 #include <QPointF>
-
 #include <QGraphicsSceneMouseEvent>
 
 class ImageItem : public QObject, public QGraphicsPixmapItem
