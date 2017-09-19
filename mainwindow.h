@@ -52,6 +52,7 @@ public slots:
     void showMousePosition(QPointF& pos);
     void showClosestContour(QPointF& pos);
     void onPixelClicked(QPointF& pos);
+    void showSelectedContours(QRect& selection);
 
 private slots:
     void resizeEvent(QResizeEvent *event);
@@ -65,11 +66,8 @@ private slots:
     void on_centroidsCheckBox_stateChanged(int arg1);
     void on_actionSave_to_CSV_triggered();
     void on_mainTabs_currentChanged(int index);
-
     void on_trackingApplyButton_clicked();
-
     void on_blurSpinBox_valueChanged(int arg1);
-
     void on_thresholdSpinBox_valueChanged(int arg1);
 
 private:
@@ -93,7 +91,7 @@ private:
     void drawCrosshair(int x, int y, QColor color=QColor(50,205,50,100));
     void savePointsToCSV(QString filename);
     void updateAllContours();
-    void drawAllContours(int frame_index);
+    void drawAllContours(int frame_index, std::vector<int> contour_indices);
     void showCannyFrame(int frame_index);
     cv::Point getMeanPoint(const Contour contour);
     cv::Point getCenterOfMass(const Contour contour);
