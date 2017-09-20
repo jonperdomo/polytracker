@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /// Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
-    //connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
+    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
     //connect(ui->graphicsView, SIGNAL(pixelUpdate(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(ui->graphicsView, SIGNAL(selectionUpdate(QRect&)), this, SLOT(showSelectedContours(QRect&)));
@@ -83,26 +83,19 @@ void MainWindow::showClosestContour(QPointF &pos)
         cv::Point mouse;
         mouse.x = pos.x();
         mouse.y = pos.y();
-        int reach = 15;
-        int best_distance = current_frame.cols;
-        int index = -1;
         int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-        std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
-        for (int i=0; i<centroids.size(); i++)
+        ContourList contours = frame_contours.at(frame_index);
+        for (int i=0; i<contours.size(); i++)
         {
-            cv::Point centroid = centroids.at(i);
-            double dist = cv::norm(centroid-mouse);
+            Contour contour = contours.at(i);
+            double result = cv::pointPolygonTest(contour, mouse, false);
 
-            if (dist < best_distance)
+            if (result > -1)
             {
-                best_distance = dist;
-                index = i;
+                active_contours = {i};
+                drawAllContours(frame_index);
+                break;
             }
-        }
-        if (best_distance < reach)
-        {
-            //ui->contourTable->selectRow(index);
-            drawAllContours(frame_index, {index});
         }
     }
 }
@@ -124,8 +117,6 @@ void MainWindow::onPixelClicked(QPointF &pos)
 
 void MainWindow::showSelectedContours(QRect &selection)
 {
-    qDebug() << "BL: " << (int)selection.bottomLeft().x() << ", " << (int)selection.bottomLeft().y() << "\nTR: " << (int)selection.topRight().x() << ", " << (int)selection.topRight().y();
-
     if (ui->mainTabs->currentIndex()==0 && ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
     {
         cv::Point mouse;
@@ -137,14 +128,13 @@ void MainWindow::showSelectedContours(QRect &selection)
         for (int i=0; i<centroids.size(); i++)
         {
             cv::Point centroid = centroids.at(i);
-            double dist = cv::norm(centroid-mouse);
-            if (selection.contains((int)centroid.x, (int)centroid.y) || dist < 5)
-            //if (selection.contains((int)centroid.x, (int)centroid.y))
+            if (selection.contains((int)centroid.x, (int)centroid.y))
             {
                 selected.push_back(i);
             }
         }
-        drawAllContours(frame_index, selected);
+        active_contours = selected;
+        drawAllContours(frame_index);
     }
 }
 
@@ -209,7 +199,7 @@ void MainWindow::savePointsToCSV(QString filename)
     qDebug() << "saved all points: " << filename;
 }
 
-void MainWindow::drawAllContours(int frame_index, std::vector<int> contour_indices)
+void MainWindow::drawAllContours(int frame_index)
 {
     if (frame_contours.size()>0)
     {
@@ -247,9 +237,8 @@ void MainWindow::drawAllContours(int frame_index, std::vector<int> contour_indic
             for (int i=0; i<contour_colors.size(); i++)
             {
                 cv::Scalar color = contour_colors.at(i);
-                if (std::find(contour_indices.begin(), contour_indices.end(), i) != contour_indices.end())
+                if (std::find(active_contours.begin(), active_contours.end(), i) != active_contours.end())
                 {
-                    contour_indices.erase(std::remove(contour_indices.begin(), contour_indices.end(), i), contour_indices.end());
                     cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
@@ -438,7 +427,7 @@ void MainWindow::on_frameSpinBox_valueChanged(int arg1)
     int tab = ui->mainTabs->currentIndex();
     if (tab == 0)
     {
-        drawAllContours(frame_index, std::vector<int>());
+        drawAllContours(frame_index);
     }
     else if (tab == 1)
     {
@@ -528,7 +517,7 @@ void MainWindow::on_contourTable_currentCellChanged(int row, int column, int pre
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    drawAllContours(frame_index, std::vector<int>());
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_deleteContourButton_clicked()
@@ -566,14 +555,14 @@ void MainWindow::on_contoursCheckBox_stateChanged(int arg1)
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    drawAllContours(frame_index, std::vector<int>());
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_centroidsCheckBox_stateChanged(int arg1)
 {
     /// Outline the contour selected in the table
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    drawAllContours(frame_index, std::vector<int>());
+    drawAllContours(frame_index);
 }
 
 void MainWindow::on_actionSave_to_CSV_triggered()
@@ -592,7 +581,7 @@ void MainWindow::on_mainTabs_currentChanged(int index)
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
     if (index==0)
     {
-        drawAllContours(frame_index, std::vector<int>());
+        drawAllContours(frame_index);
     }
     else if (index==1)
     {

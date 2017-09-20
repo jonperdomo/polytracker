@@ -79,6 +79,7 @@ private:
     ContourListSet frame_contours;
     HierarchyListSet frame_hierarchies;
     ColorList contour_colors;
+    std::vector<int> active_contours;
     QImage img;
     QGraphicsScene *scene;
     ImageItem *image_item;
@@ -91,7 +92,7 @@ private:
     void drawCrosshair(int x, int y, QColor color=QColor(50,205,50,100));
     void savePointsToCSV(QString filename);
     void updateAllContours();
-    void drawAllContours(int frame_index, std::vector<int> contour_indices);
+    void drawAllContours(int frame_index);
     void showCannyFrame(int frame_index);
     cv::Point getMeanPoint(const Contour contour);
     cv::Point getCenterOfMass(const Contour contour);
