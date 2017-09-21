@@ -50,6 +50,11 @@ void ImageView::mouseReleaseEvent(QMouseEvent *event)
     band.hide();
 }
 
+void ImageView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    emit doubleClick();
+}
+
 void ImageView::wheelEvent(QWheelEvent *event)
 {
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);

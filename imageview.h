@@ -27,11 +27,13 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event);
     virtual void wheelEvent(QWheelEvent* event);
 
 signals:
     void selectionUpdate(QRect&);
     void pixelUpdate(QPointF&);
+    void doubleClick();
 };
 
 #endif // IMAGEVIEW_H

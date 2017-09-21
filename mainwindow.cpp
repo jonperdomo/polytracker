@@ -52,8 +52,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
     //connect(ui->graphicsView, SIGNAL(pixelUpdate(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(ui->graphicsView, SIGNAL(selectionUpdate(QRect&)), this, SLOT(showSelectedContours(QRect&)));
-    connect(ui->contourTable, SIGNAL(itemSelectionChanged()), this, SLOT(on_contourTable_itemSelectionChanged()));
-    connect(ui->contourTable, SIGNAL(currentCellChanged(int,int,int,int)), this, SLOT(on_contourTable_currentCellChanged(int,int,int,int)));
+    connect(ui->graphicsView, SIGNAL(doubleClick()), this, SLOT(deselectAll()));
     show();
 }
 
@@ -92,8 +91,11 @@ void MainWindow::showClosestContour(QPointF &pos)
 
             if (result > -1)
             {
-                active_contours = {i};
-                drawAllContours(frame_index);
+                if (std::find(active_contours.begin(), active_contours.end(), i) == active_contours.end())
+                {
+                    active_contours.push_back(i);
+                    drawAllContours(frame_index);
+                }
                 break;
             }
         }
@@ -122,7 +124,7 @@ void MainWindow::showSelectedContours(QRect &selection)
         cv::Point mouse;
         mouse.x = selection.bottomLeft().x();
         mouse.y = selection.bottomLeft().y();
-        std::vector<int> selected;
+        //std::vector<int> selected;
         int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
         std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
         for (int i=0; i<centroids.size(); i++)
@@ -130,12 +132,22 @@ void MainWindow::showSelectedContours(QRect &selection)
             cv::Point centroid = centroids.at(i);
             if (selection.contains((int)centroid.x, (int)centroid.y))
             {
-                selected.push_back(i);
+                if (std::find(active_contours.begin(), active_contours.end(), i) == active_contours.end())
+                {
+                    active_contours.push_back(i);
+                }
             }
         }
-        active_contours = selected;
         drawAllContours(frame_index);
     }
+}
+
+void MainWindow::deselectAll()
+{
+    /// Deselect all the active contours
+    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    active_contours.clear();
+    drawAllContours(frame_index);
 }
 
 void MainWindow::removeAllSceneEllipses()
@@ -180,12 +192,18 @@ void MainWindow::savePointsToCSV(QString filename)
     {
         /// Populate the CSV
         std::vector<cv::Point> centroids = frame_centroids.at(frame);
-        for (int contour=0; contour<centroids.size(); contour++)
+        for(std::vector<int>::size_type i = 0; i != active_contours.size(); i++)
         {
-            cv::Point centroid = centroids.at(contour);
-            text_data += QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
-            //qDebug() << QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
+            /* std::cout << someVector[i]; ... */
+            cv::Point centroid = centroids.at(active_contours.at(i));
+            text_data += QString("%1,%2,%3,%4,\n").arg(frame+1).arg(i+1).arg(centroid.x).arg(centroid.y);
         }
+//        for (int contour=0; contour<centroids.size(); contour++)
+//        {
+//            cv::Point centroid = centroids.at(contour);
+//            text_data += QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
+//            //qDebug() << QString("%1,%2,%3,%4,\n").arg(frame+1).arg(contour+1).arg(centroid.x).arg(centroid.y);
+//        }
     }
     QFile csv_file(filename);
     if(csv_file.open(QIODevice::WriteOnly | QIODevice::Truncate))
@@ -240,7 +258,9 @@ void MainWindow::drawAllContours(int frame_index)
                     ui->contourTable->insertRow(count);
                     ui->contourTable->setItem(count, 0, new QTableWidgetItem());
                     ui->contourTable->setItem(count, 1, new QTableWidgetItem(text));
+                    ui->contourTable->setItem(count, 2, new QTableWidgetItem());
                     ui->contourTable->item(count, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
+                    ui->contourTable->item(count, 2)->setCheckState(Qt::Checked);
 
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
@@ -506,15 +526,17 @@ void MainWindow::on_action_Open_triggered()
 
 void MainWindow::on_contourTable_itemSelectionChanged()
 {
-    QItemSelectionModel *selection = ui->contourTable->selectionModel();
-    ui->deleteContourButton->setEnabled(selection->hasSelection());
+    //QItemSelectionModel *selection = ui->contourTable->selectionModel();
+    //ui->deleteContourButton->setEnabled(selection->hasSelection());
+    qDebug() << "table selection changed";
 }
 
 void MainWindow::on_contourTable_currentCellChanged(int row, int column, int previous_row, int previous_column)
 {
     /// Outline the contour selected in the table
-    int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    drawAllContours(frame_index);
+    //int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+    //drawAllContours(frame_index);
+    qDebug() << "cell changed";
 }
 
 void MainWindow::on_deleteContourButton_clicked()

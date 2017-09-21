@@ -53,6 +53,7 @@ public slots:
     void showClosestContour(QPointF& pos);
     void onPixelClicked(QPointF& pos);
     void showSelectedContours(QRect& selection);
+    void deselectAll();
 
 private slots:
     void resizeEvent(QResizeEvent *event);
