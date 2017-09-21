@@ -211,35 +211,37 @@ void MainWindow::drawAllContours(int frame_index)
         cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
         cap.read(current_frame);
 
-        /// Update the table's centroid values
+        /// Access the contour centroid values
         std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
-        for (int i=0; i<centroids.size(); i++)
-        {
-            cv::Point centroid = centroids.at(i);
-            QString text = QString("%1, %2").arg(centroid.x).arg(centroid.y);
-            ui->contourTable->setItem(i, 1, new QTableWidgetItem(text));
-        }
-
-//        /// Get the current selected contours
-//        QItemSelectionModel *selection = ui->contourTable->selectionModel();
-//        std::vector<int> inds;
-//        foreach (QModelIndex index, selection->selectedRows())
-//        {
-//            inds.push_back(index.row());
-//        }
 
         /// Draw contours
         if (ui->contoursCheckBox->isChecked())
         {
-            cv::RNG rng(12345);
+            //cv::RNG rng(12345);
             ContourList contours = frame_contours.at(frame_index);
             Hierarchy hierarchy = frame_hierarchies.at(frame_index);
+
+            /// Clear the table
+            ui->contourTable->setRowCount(0);
+
+            /// Iterate through contours
             for (int i=0; i<contour_colors.size(); i++)
             {
                 cv::Scalar color = contour_colors.at(i);
                 if (std::find(active_contours.begin(), active_contours.end(), i) != active_contours.end())
                 {
+                    /// Draw the active contours
                     cv::drawContours(current_frame, contours, i, color, 2, 8, hierarchy, 0, cv::Point());
+
+                    /// Update the table
+                    cv::Point centroid = centroids.at(i);
+                    QString text = QString("%1, %2").arg(centroid.x).arg(centroid.y);
+                    int count = ui->contourTable->rowCount();
+                    ui->contourTable->insertRow(count);
+                    ui->contourTable->setItem(count, 0, new QTableWidgetItem());
+                    ui->contourTable->setItem(count, 1, new QTableWidgetItem(text));
+                    ui->contourTable->item(count, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
+
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
                 }
@@ -412,11 +414,6 @@ void MainWindow::updateAllContours()
         /// Set the color for the contour
         cv::Scalar color = cv::Scalar(rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255));
         contour_colors[c] = (color);
-
-        /// Add contours to the table
-        ui->contourTable->insertRow(ui->contourTable->rowCount());
-        ui->contourTable->setItem(ui->contourTable->rowCount()-1, 0, new QTableWidgetItem());
-        ui->contourTable->item(ui->contourTable->rowCount()-1, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
     }
     qDebug() << "Found" << contour_colors.size() << "contours";
 }
