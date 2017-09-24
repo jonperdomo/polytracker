@@ -50,8 +50,8 @@ public:
 
 public slots:
     void showMousePosition(QPointF& pos);
-    void showClosestContour(QPointF& pos);
-    void onPixelClicked(QPointF& pos);
+    //void showClosestContour(QPointF& pos);
+    void updateInset(QPointF& pos);
     void showSelectedContours(QRect& selection);
     void deselectAll();
 

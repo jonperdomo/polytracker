@@ -121,11 +121,6 @@
                  <string>Centroid</string>
                 </property>
                </column>
-               <column>
-                <property name="text">
-                 <string>Visible</string>
-                </property>
-               </column>
               </widget>
              </item>
              <item>

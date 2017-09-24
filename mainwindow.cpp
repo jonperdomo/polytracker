@@ -48,8 +48,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /// Connect signals
     connect(image_item, SIGNAL(currentPositionRgbChanged(QPointF&)), this, SLOT(showMousePosition(QPointF&)));
-    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
-    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(onPixelClicked(QPointF&)));
+    //connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
+    connect(image_item, SIGNAL(pixelClicked(QPointF&)), this, SLOT(updateInset(QPointF&)));
     //connect(ui->graphicsView, SIGNAL(pixelUpdate(QPointF&)), this, SLOT(showClosestContour(QPointF&)));
     connect(ui->graphicsView, SIGNAL(selectionUpdate(QRect&)), this, SLOT(showSelectedContours(QRect&)));
     connect(ui->graphicsView, SIGNAL(doubleClick()), this, SLOT(deselectAll()));
@@ -75,34 +75,36 @@ void MainWindow::showMousePosition(QPointF &pos)
     }
 }
 
-void MainWindow::showClosestContour(QPointF &pos)
-{
-    if (ui->mainTabs->currentIndex()==0 && ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
-    {
-        cv::Point mouse;
-        mouse.x = pos.x();
-        mouse.y = pos.y();
-        int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-        ContourList contours = frame_contours.at(frame_index);
-        for (int i=0; i<contours.size(); i++)
-        {
-            Contour contour = contours.at(i);
-            double result = cv::pointPolygonTest(contour, mouse, false);
+//void MainWindow::showClosestContour(QPointF &pos)
+//{
+//    if (ui->mainTabs->currentIndex()==0 && ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
+//    {
+//        std::vector<int> selected;
+//        cv::Point mouse;
+//        mouse.x = pos.x();
+//        mouse.y = pos.y();
+//        int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+//        ContourList contours = frame_contours.at(frame_index);
+//        for (int i=0; i<contours.size(); i++)
+//        {
+//            Contour contour = contours.at(i);
+//            double result = cv::pointPolygonTest(contour, mouse, false);
 
-            if (result > -1)
-            {
-                if (std::find(active_contours.begin(), active_contours.end(), i) == active_contours.end())
-                {
-                    active_contours.push_back(i);
-                    drawAllContours(frame_index);
-                }
-                break;
-            }
-        }
-    }
-}
+//            if (result > -1)
+//            {
+//                if (std::find(active_contours.begin(), active_contours.end(), i) == active_contours.end())
+//                {
+//                    active_contours.clear();
+//                    active_contours.push_back(i);
+//                    drawAllContours(frame_index);
+//                }
+//                break;
+//            }
+//        }
+//    }
+//}
 
-void MainWindow::onPixelClicked(QPointF &pos)
+void MainWindow::updateInset(QPointF &pos)
 {
     if (!current_frame.empty())
     {
@@ -121,10 +123,10 @@ void MainWindow::showSelectedContours(QRect &selection)
 {
     if (ui->mainTabs->currentIndex()==0 && ui->contoursCheckBox->isChecked() && frame_centroids.size()>0)
     {
+        std::vector<int> selected;
         cv::Point mouse;
         mouse.x = selection.bottomLeft().x();
         mouse.y = selection.bottomLeft().y();
-        //std::vector<int> selected;
         int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
         std::vector<cv::Point> centroids = frame_centroids.at(frame_index);
         for (int i=0; i<centroids.size(); i++)
@@ -132,12 +134,10 @@ void MainWindow::showSelectedContours(QRect &selection)
             cv::Point centroid = centroids.at(i);
             if (selection.contains((int)centroid.x, (int)centroid.y))
             {
-                if (std::find(active_contours.begin(), active_contours.end(), i) == active_contours.end())
-                {
-                    active_contours.push_back(i);
-                }
+                selected.push_back(i);
             }
         }
+        active_contours = selected;
         drawAllContours(frame_index);
     }
 }
@@ -260,7 +260,7 @@ void MainWindow::drawAllContours(int frame_index)
                     ui->contourTable->setItem(count, 1, new QTableWidgetItem(text));
                     ui->contourTable->setItem(count, 2, new QTableWidgetItem());
                     ui->contourTable->item(count, 0)->setBackgroundColor(QColor(color.val[0], color.val[1], color.val[2], 255));
-                    ui->contourTable->item(count, 2)->setCheckState(Qt::Checked);
+                    //ui->contourTable->item(count, 2)->setCheckState(Qt::Checked);
 
                 } else {
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
