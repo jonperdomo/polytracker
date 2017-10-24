@@ -9,4 +9,3 @@ Motion tracking software for use in studying animal biomechanics.
 
 ![ctrs1](https://github.com/jperdomo23/biomotion/blob/master/ScreenCaptures/24OCT2017_CTRS.PNG)
 ![ctds1](https://github.com/jperdomo23/biomotion/blob/master/ScreenCaptures/24OCT2017_CTDS.PNG)
-![ctrs2](https://github.com/jperdomo23/biomotion/blob/master/ScreenCaptures/24OCT2017_CTRS_0.PNG)
