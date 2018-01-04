@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>703</width>
-    <height>436</height>
+    <width>823</width>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,7 +19,10 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="5,1">
     <item>
-     <layout class="QVBoxLayout" name="videoPanel" stretch="1,0,0">
+     <layout class="QVBoxLayout" name="videoPanel" stretch="0,1,0,0">
+      <item>
+       <widget class="QVTKWidget" name="qvtkWidget"/>
+      </item>
       <item>
        <widget class="ImageView" name="graphicsView"/>
       </item>
@@ -85,7 +88,7 @@
        <item>
         <widget class="QTabWidget" name="mainTabs">
          <property name="currentIndex">
-          <number>0</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="contourTab">
           <attribute name="title">
@@ -228,6 +231,33 @@
               </layout>
              </item>
              <item>
+              <layout class="QHBoxLayout" name="trackBlurLayout">
+               <item>
+                <widget class="QSpinBox" name="trackBlurSpinBox">
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>2</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QSlider" name="trackBlurSlider">
+                 <property name="minimum">
+                  <number>1</number>
+                 </property>
+                 <property name="singleStep">
+                  <number>2</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
+             <item>
               <widget class="QPushButton" name="trackingApplyButton">
                <property name="text">
                 <string>Apply</string>
@@ -250,8 +280,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>703</width>
-     <height>20</height>
+     <width>823</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -316,6 +346,11 @@
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
   <customwidget>
+   <class>QVTKWidget</class>
+   <extends>QWidget</extends>
+   <header>QVTKWidget.h</header>
+  </customwidget>
+  <customwidget>
    <class>ImageView</class>
    <extends>QGraphicsView</extends>
    <header>imageview.h</header>
@@ -350,8 +385,8 @@
      <y>394</y>
     </hint>
     <hint type="destinationlabel">
-     <x>147</x>
-     <y>390</y>
+     <x>207</x>
+     <y>411</y>
     </hint>
    </hints>
   </connection>
@@ -362,12 +397,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>528</x>
-     <y>125</y>
+     <x>693</x>
+     <y>145</y>
     </hint>
     <hint type="destinationlabel">
-     <x>596</x>
-     <y>123</y>
+     <x>791</x>
+     <y>143</y>
     </hint>
    </hints>
   </connection>
@@ -378,12 +413,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>615</x>
-     <y>122</y>
+     <x>791</x>
+     <y>143</y>
     </hint>
     <hint type="destinationlabel">
-     <x>552</x>
-     <y>122</y>
+     <x>693</x>
+     <y>145</y>
     </hint>
    </hints>
   </connection>
@@ -394,12 +429,12 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>642</x>
-     <y>190</y>
+     <x>791</x>
+     <y>238</y>
     </hint>
     <hint type="destinationlabel">
-     <x>555</x>
-     <y>201</y>
+     <x>728</x>
+     <y>239</y>
     </hint>
    </hints>
   </connection>
@@ -410,12 +445,44 @@
    <slot>setValue(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>590</x>
-     <y>197</y>
+     <x>728</x>
+     <y>239</y>
     </hint>
     <hint type="destinationlabel">
-     <x>650</x>
-     <y>197</y>
+     <x>791</x>
+     <y>238</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>trackBlurSpinBox</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>trackBlurSlider</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>656</x>
+     <y>324</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>724</x>
+     <y>323</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>trackBlurSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>trackBlurSpinBox</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>723</x>
+     <y>326</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>644</x>
+     <y>324</y>
     </hint>
    </hints>
   </connection>

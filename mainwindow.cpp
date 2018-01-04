@@ -7,6 +7,13 @@ MainWindow::MainWindow(QWidget *parent) :
     blur(3),
     threshold(200)
 {
+    int stateSize = 6;
+    int measSize = 4;
+    int contrSize = 0;
+
+    unsigned int type = CV_32F;
+    cv::KalmanFilter kf(stateSize, measSize, contrSize, type);
+
     /// Set up Qt toolbar window
     ui->setupUi(this);
     ui->contourTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
@@ -263,6 +270,8 @@ void MainWindow::drawAllContours(int frame_index)
                     //ui->contourTable->item(count, 2)->setCheckState(Qt::Checked);
 
                 } else {
+//                    cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
+
                     cv::drawContours(current_frame, contours, i, color, 1, 8, hierarchy, 0, cv::Point());
                 }
             }
@@ -353,6 +362,12 @@ cv::Point MainWindow::getCenterOfMass(const Contour contour)
 
 void MainWindow::updateAllContours()
 {
+    /// Contour-oriented tracking:
+    /// 1) Find contours
+    /// 2) Binarize the image, making contours = 1 & background = 0
+    /// 3) Create tags for each countour (ID from 0-N in each frame)
+    /// 4) Make a matrix of 1's and 0's for each frame,
+
     /// Clear current contours
     frame_centroids.clear();
     frame_contours.clear();
@@ -618,11 +633,48 @@ void MainWindow::on_trackingApplyButton_clicked()
 void MainWindow::on_blurSpinBox_valueChanged(int arg1)
 {
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    showCannyFrame(frame_index);
+//    showCannyFrame(frame_index);
 }
 
 void MainWindow::on_thresholdSpinBox_valueChanged(int arg1)
 {
     int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
-    showCannyFrame(frame_index);
+//    showCannyFrame(frame_index);
+}
+
+void MainWindow::on_trackBlurSpinBox_valueChanged(int arg1)
+{
+    if (cap.isOpened())
+    {
+        /// Clear all the crosshairs
+        removeAllSceneEllipses();
+        removeAllSceneLines();
+
+        /// Set the frame
+        int frame_index = cap.get(CV_CAP_PROP_POS_FRAMES)-1;
+        cap.set(CV_CAP_PROP_POS_FRAMES, frame_index);
+        cap.read(current_frame);
+
+        try
+        {
+            /// Convert image to gray and blur it
+            int blur = ui->trackBlurSpinBox->value();
+            cv::Mat src_gray;
+            cv::cvtColor(current_frame, src_gray, CV_BGR2GRAY);
+//            cv::medianBlur(src_gray, src_gray, blur);
+            cv::blur(src_gray, src_gray, cv::Size(blur,blur));
+
+            /// Show in a window
+            img = QImage((uchar*) src_gray.data, src_gray.cols, src_gray.rows, src_gray.step, QImage::Format_Grayscale8);
+            QPixmap pixmap;
+            pixmap = QPixmap::fromImage(img);
+
+            /// Show in view, scaled to view bounds & keeping aspect ratio
+            image_item->setPixmap(pixmap);
+        }
+        catch (const std::runtime_error& error)
+        {
+            qDebug() << "blur failed!";
+        }
+    }
 }
