@@ -1,7 +1,5 @@
 # polytracker
-Landmark tracking software.
-
-- Developed with Qt 5.9 and OpenCV 3.2.0 using Qt Creator 4.4.0
+Developed with Qt 5.9 and OpenCV 3.2.0 using Qt Creator 4.4.0
 
 ## Automatic detection of landmarks
 - Matches landmarks across a time series
