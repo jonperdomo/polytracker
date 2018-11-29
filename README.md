@@ -1,5 +1,5 @@
 # polytracker
-Landmark tracking software for use in studying animal biomechanics.
+Landmark tracking software.
 
 - Developed with Qt 5.9 and OpenCV 3.2.0 using Qt Creator 4.4.0
 
