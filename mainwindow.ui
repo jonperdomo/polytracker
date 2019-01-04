@@ -14,15 +14,12 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>BioMotion</string>
+   <string>PolyTracker</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout" stretch="5,1">
     <item>
-     <layout class="QVBoxLayout" name="videoPanel" stretch="0,1,0,0">
-      <item>
-       <widget class="QVTKWidget" name="qvtkWidget"/>
-      </item>
+     <layout class="QVBoxLayout" name="videoPanel" stretch="1,0,0">
       <item>
        <widget class="ImageView" name="graphicsView"/>
       </item>
@@ -345,11 +342,6 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
-  <customwidget>
-   <class>QVTKWidget</class>
-   <extends>QWidget</extends>
-   <header>QVTKWidget.h</header>
-  </customwidget>
   <customwidget>
    <class>ImageView</class>
    <extends>QGraphicsView</extends>
